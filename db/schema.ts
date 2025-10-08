@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, integer, jsonb } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
     id: text("id").primaryKey(),
@@ -73,5 +73,48 @@ export const userprofile = pgTable("userprofile", {
     updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
   });
 
+export const userAnalytics = pgTable("user_analytics", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").unique(),
+  route: text("route").notNull(),
+  method: text("method").notNull(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  generationAttemptsCount: integer("generation_attempts_count").default(0),
+  generationAttemptsResetTime: timestamp("generation_attempts_reset_time"),
+  generationAttemptsIsRateLimited: boolean("generation_attempts_is_rate_limited").default(false),
+  sessionId: text("session_id"),
+});
 
-export const schema = {user, session, account, verification, userprofile};    
+export const idea = pgTable("idea", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  summary: text("summary").notNull(),
+  unmetNeeds: text("unmet_needs").array().default([]),
+  productIdea: text("product_idea").array().default([]),
+  proofOfConcept: text("proof_of_concept").default(""),
+  sourceUrl: text("source_url").unique(),
+  promptUsed: text("prompt_used"),
+  confidenceScore: integer("confidence_score"),
+  suggestedPlatforms: text("suggested_platforms").array().default([]),
+  creationDate: text("creation_date").default(""),
+  ideaSource: text("idea_source").default(""),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const bookmarkedIdea = pgTable("bookmarked_idea", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  summary: text("summary").notNull(),
+  unmetNeeds: text("unmet_needs").array().default([]),
+  productIdea: text("product_idea").array().default([]),
+  proofOfConcept: text("proof_of_concept").default(""),
+  sourceUrl: text("source_url"),
+  promptUsed: text("prompt_used"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+
+export const schema = {user, session, account, verification, userprofile, userAnalytics, idea, bookmarkedIdea};
