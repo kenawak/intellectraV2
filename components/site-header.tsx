@@ -15,7 +15,7 @@ export function SiteHeader() {
         <div className="ml-auto flex items-center gap-2">
           <Button variant="ghost" asChild size="sm" className="hidden sm:flex">
             <a
-              href="/projects"
+              href="/dashboard/projects"
               className="dark:text-foreground"
             >
               Projects

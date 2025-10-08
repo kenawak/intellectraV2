@@ -34,12 +34,12 @@ const data = {
     },
     {
       title: "New Project",
-      url: "/new-project",
+      url: "/dashboard/new-project",
       icon: IconPlus,
     },
     {
       title: "Projects",
-      url: "/projects",
+      url: "/dashboard/projects",
       icon: IconFolder,
     },
   ],
