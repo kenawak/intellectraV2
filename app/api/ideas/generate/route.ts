@@ -3,7 +3,7 @@ import { requireAuth } from '@/lib/auth-utils';
 import { generateIdeas } from '@/lib/idea-generation';
 import { db } from '@/db/drizzle';
 import { userAnalytics, tokenUsage, userprofile } from '@/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, desc } from 'drizzle-orm';
 
 export async function GET(req: NextRequest) {
   try {
@@ -29,13 +29,15 @@ export async function GET(req: NextRequest) {
     // Handle token rate limiting (pre-check with estimated max tokens)
     let tokensUsed = userAnalytic[0]?.tokensUsedThisHour || 0;
     let tokensResetTime = userAnalytic[0]?.tokensResetTime;
-    const tokenLimit = userAnalytic[0]?.tokenLimitPerHour;
-    const maxTokensPerRequest = 20000; // Estimated max tokens per request
+    const tokenLimit = userAnalytic[0]?.tokenLimitPerHour || 100000;
+    // Get last token usage as estimate for this request
+    const lastUsage = await db.select().from(tokenUsage).where(eq(tokenUsage.userId, userId)).orderBy(desc(tokenUsage.timestamp)).limit(1);
+    const estimatedTokens = lastUsage[0]?.totalTokens || 20000; // Use last usage or default estimate
     if (!tokensResetTime || now > tokensResetTime) {
       tokensUsed = 0;
       tokensResetTime = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour
     }
-    const tokensRateLimited = tokensUsed + maxTokensPerRequest >= tokenLimit;
+    const tokensRateLimited = tokensUsed + estimatedTokens >= tokenLimit;
 
     // If attempts or tokens rate limited, return early
     if (attemptsRateLimited || tokensRateLimited) {

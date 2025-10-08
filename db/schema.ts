@@ -89,7 +89,7 @@ export const userAnalytics = pgTable("user_analytics", {
   tokensUsedThisHour: integer("tokens_used_this_hour").default(0),
   tokensResetTime: timestamp("tokens_reset_time"),
   isTokenRateLimited: boolean("is_token_rate_limited").default(false),
-  tokenLimitPerHour: integer("token_limit_per_hour").default(20000),
+  tokenLimitPerHour: integer("token_limit_per_hour").default(100000),
   sessionId: text("session_id"),
 });
 
