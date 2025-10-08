@@ -69,6 +69,8 @@ export const userprofile = pgTable("userprofile", {
     paid: boolean("paid").default(false).notNull(),
     plan: text("plan").default("free").notNull(),
     customerId: text("customer_id"),
+    totalTokensSpent: integer("total_tokens_spent").default(0).notNull(),
+    tokenLimit: integer("token_limit").default(10000).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
   });
@@ -84,6 +86,10 @@ export const userAnalytics = pgTable("user_analytics", {
   generationAttemptsCount: integer("generation_attempts_count").default(0),
   generationAttemptsResetTime: timestamp("generation_attempts_reset_time"),
   generationAttemptsIsRateLimited: boolean("generation_attempts_is_rate_limited").default(false),
+  tokensUsedThisHour: integer("tokens_used_this_hour").default(0),
+  tokensResetTime: timestamp("tokens_reset_time"),
+  isTokenRateLimited: boolean("is_token_rate_limited").default(false),
+  tokenLimitPerHour: integer("token_limit_per_hour").default(20000),
   sessionId: text("session_id"),
 });
 
@@ -116,5 +122,18 @@ export const bookmarkedIdea = pgTable("bookmarked_idea", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const tokenUsage = pgTable("token_usage", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  tokensUsed: integer("tokens_used").notNull(),
+  operation: text("operation").notNull(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  inputTokens: integer("input_tokens"),
+  outputTokens: integer("output_tokens"),
+  totalTokens: integer("total_tokens"),
+});
 
-export const schema = {user, session, account, verification, userprofile, userAnalytics, idea, bookmarkedIdea};
+
+export const schema = {user, session, account, verification, userprofile, userAnalytics, idea, bookmarkedIdea, tokenUsage};

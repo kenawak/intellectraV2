@@ -57,7 +57,7 @@ async function generateDeveloperSaaSIdeas(formattedPosts: string) {
     .replace(/```/g, "")
     .trim();
 
-  return cleanedResponse;
+  return { text: cleanedResponse, usage: res.usageMetadata };
 }
 
 async function fetchRecentDeveloperPosts(query: string) {
@@ -91,7 +91,8 @@ function saveContent(content: string) {
 export async function generateIdeas(query: string = "developer tool pain points") {
   try {
     const posts = await fetchRecentDeveloperPosts(query);
-    const ideasJson = await generateDeveloperSaaSIdeas(posts);
+    const result = await generateDeveloperSaaSIdeas(posts);
+    const { text: ideasJson, usage } = result;
     const parsedIdeas = JSON.parse(ideasJson);
 
     // First save ALL ideas to public collection (they'll be removed if bookmarked later)
@@ -119,7 +120,7 @@ export async function generateIdeas(query: string = "developer tool pain points"
       }
     }
 
-    return parsedIdeas;
+    return { ideas: parsedIdeas, usage };
   } catch (err) {
     console.error(err);
     throw err;

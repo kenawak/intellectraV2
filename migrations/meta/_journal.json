@@ -29,6 +29,13 @@
       "when": 1759905652030,
       "tag": "0003_sloppy_leo",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1759911432539,
+      "tag": "0004_known_nebula",
+      "breakpoints": true
     }
   ]
 }
