@@ -6,9 +6,8 @@ import { eq } from 'drizzle-orm';
 
 export async function GET(req: NextRequest) {
   try {
-    // const session = await requireAuth(req);
-    // const userId = session.user.id;
-    const userId = 'VOeNpacxjN1pLXXxgzvLmyG8y9PeEwb6'; // Real user ID
+    const session = await requireAuth(req);
+    const userId = session.user.id;
 
     const bookmarks = await db.select().from(bookmarkedIdea).where(eq(bookmarkedIdea.userId, userId)).orderBy(bookmarkedIdea.createdAt);
 

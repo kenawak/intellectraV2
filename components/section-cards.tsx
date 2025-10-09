@@ -14,16 +14,18 @@ import {
 } from "@/components/ui/card"
 
 interface AnalyticsData {
-  systemAnalytics: {
-    bookmarks: number
-    totalPublicIdeas: number
-  }
-  userAnalytics: {
-    generationAttempts: number
-    remainingAttempts: number
-    resetTime: string | null
-  }
-}
+   systemAnalytics: {
+     bookmarks: number
+     totalPublicIdeas: number
+     avgConfidence: number
+   }
+   userAnalytics: {
+     generationAttempts: number
+     remainingAttempts: number
+     resetTime: string | null
+     avgConfidence: number
+   }
+ }
 
 export function SectionCards() {
   const [data, setData] = useState<AnalyticsData | null>(null)
@@ -77,26 +79,48 @@ export function SectionCards() {
   }
 
   return (
-    <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+    <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-3">
       <Card className="@container/card">
         <CardHeader>
-          <CardDescription>Total Public Ideas</CardDescription>
+          <CardDescription>Total Ideas Generated</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
             {data.systemAnalytics.totalPublicIdeas}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
               <IconTrendingUp />
-              Active
+              Generated
             </Badge>
           </CardAction>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            Total ideas shared <IconTrendingUp className="size-4" />
+            Total ideas created <IconTrendingUp className="size-4" />
           </div>
           <div className="text-muted-foreground">
             Publicly available content
+          </div>
+        </CardFooter>
+      </Card>
+      <Card className="@container/card">
+        <CardHeader>
+          <CardDescription>My Avg. Confidence</CardDescription>
+          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+            {data.userAnalytics.avgConfidence}%
+          </CardTitle>
+          <CardAction>
+            <Badge variant="outline">
+              <IconTrendingUp />
+              Score
+            </Badge>
+          </CardAction>
+        </CardHeader>
+        <CardFooter className="flex-col items-start gap-1.5 text-sm">
+          <div className="line-clamp-1 flex gap-2 font-medium">
+            Average confidence from my projects <IconTrendingUp className="size-4" />
+          </div>
+          <div className="text-muted-foreground">
+            Based on bookmarked ideas
           </div>
         </CardFooter>
       </Card>
@@ -119,50 +143,6 @@ export function SectionCards() {
           </div>
           <div className="text-muted-foreground">
             Bookmarked content
-          </div>
-        </CardFooter>
-      </Card>
-      <Card className="@container/card">
-        <CardHeader>
-          <CardDescription>Generation Attempts</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {data.userAnalytics.generationAttempts}
-          </CardTitle>
-          <CardAction>
-            <Badge variant="outline">
-              <IconTrendingUp />
-              Used
-            </Badge>
-          </CardAction>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            AI generations used <IconTrendingUp className="size-4" />
-          </div>
-          <div className="text-muted-foreground">
-            Current session attempts
-          </div>
-        </CardFooter>
-      </Card>
-      <Card className="@container/card">
-        <CardHeader>
-          <CardDescription>Remaining Attempts</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {data.userAnalytics.remainingAttempts}
-          </CardTitle>
-          <CardAction>
-            <Badge variant="outline">
-              <IconTrendingUp />
-              Left
-            </Badge>
-          </CardAction>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Available generations <IconTrendingUp className="size-4" />
-          </div>
-          <div className="text-muted-foreground">
-            Remaining for today
           </div>
         </CardFooter>
       </Card>

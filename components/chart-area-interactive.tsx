@@ -4,6 +4,7 @@ import * as React from "react"
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
 
 import { useIsMobile } from "@/hooks/use-mobile"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardAction,
@@ -54,11 +55,25 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
+interface AnalyticsData {
+  systemAnalytics: {
+    bookmarks: number
+    totalPublicIdeas: number
+    avgConfidence: number
+  }
+  userAnalytics: {
+    generationAttempts: number
+    remainingAttempts: number
+    resetTime: string | null
+  }
+}
+
 export function ChartAreaInteractive() {
   const isMobile = useIsMobile()
   const [timeRange, setTimeRange] = React.useState("90d")
   const [chartData, setChartData] = React.useState<TokenUsage[]>([])
   const [loading, setLoading] = React.useState(true)
+  const [analytics, setAnalytics] = React.useState<AnalyticsData | null>(null)
 
   React.useEffect(() => {
     if (isMobile) {
@@ -67,13 +82,21 @@ export function ChartAreaInteractive() {
   }, [isMobile])
 
   React.useEffect(() => {
-    const fetchTokenUsage = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch('/api/analytics/token-usage', {
+        // Fetch analytics
+        const analyticsResponse = await fetch('/api/analytics')
+        if (analyticsResponse.ok) {
+          const analyticsData = await analyticsResponse.json()
+          setAnalytics(analyticsData)
+        }
+
+        // Fetch token usage
+        const tokenResponse = await fetch('/api/analytics/token-usage', {
           credentials: 'include'
         })
-        if (response.ok) {
-          const data = await response.json()
+        if (tokenResponse.ok) {
+          const data = await tokenResponse.json()
           const tokenUsageData: TokenUsage[] = data.tokenUsage
 
           // Sort by date
@@ -82,13 +105,13 @@ export function ChartAreaInteractive() {
           setChartData(processedData)
         }
       } catch (error) {
-        console.error('Failed to fetch token usage:', error)
+        console.error('Failed to fetch data:', error)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchTokenUsage()
+    fetchData()
   }, [])
 
   const filteredData = chartData.filter((item) => {
@@ -112,6 +135,25 @@ export function ChartAreaInteractive() {
           <CardTitle>Token Usage</CardTitle>
           <CardDescription>Loading...</CardDescription>
         </CardHeader>
+      </Card>
+    )
+  }
+
+  // Show generate projects message for new users
+  if (analytics && analytics.userAnalytics.generationAttempts === 0) {
+    return (
+      <Card className="@container/card">
+        <CardHeader>
+          <CardTitle>Generate Projects</CardTitle>
+          <CardDescription>
+            Start your journey by generating your first project ideas
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center py-8">
+          <Button asChild>
+            <a href="/dashboard/new-project">Generate Projects</a>
+          </Button>
+        </CardContent>
       </Card>
     )
   }

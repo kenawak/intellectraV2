@@ -6,9 +6,8 @@ import { eq, and } from 'drizzle-orm';
 
 export async function POST(req: NextRequest) {
   try {
-    // const session = await requireAuth(req);
-    // const userId = session.user.id;
-    const userId = 'VOeNpacxjN1pLXXxgzvLmyG8y9PeEwb6'; // Real user ID
+    const session = await requireAuth(req);
+    const userId = session.user.id;
 
     const ideaData = await req.json();
 
@@ -61,10 +60,10 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    // const session = await requireAuth(req);
-    // const userId = session.user.id;
-    const userId = 'VOeNpacxjN1pLXXxgzvLmyG8y9PeEwb6'; // Real user ID
-    const { source_url, title } = await req.json();
+    const session = await requireAuth(req);
+    const userId = session.user.id;
+    const ideaData = await req.json();
+    const { source_url, title } = ideaData;
 
     if (!source_url || !title) {
       return NextResponse.json({ error: "source_url and title are required" }, { status: 400 });
@@ -77,7 +76,6 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Restore to public if title and summary provided
-    const ideaData = await req.json();
     if (ideaData.title && ideaData.summary) {
       const publicIdea = {
         id: crypto.randomUUID(),

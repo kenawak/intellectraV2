@@ -97,7 +97,6 @@ export default function PublicIdeasPage() {
                     size="sm"
                     onClick={() => handleBookmark(idea)}
                     disabled={bookmarkedIds.has(idea.id)}
-                    aria-label={bookmarkedIds.has(idea.id) ? "Bookmarked" : "Bookmark idea"}
                   >
                     {bookmarkedIds.has(idea.id) ? (
                       <IconBookmarkFilled className="h-4 w-4" />
@@ -124,96 +123,63 @@ export default function PublicIdeasPage() {
                     View Details
                   </Button>
                 </SheetTrigger>
-                <SheetContent className="w-full sm:max-w-2xl overflow-y-auto bg-background p-6 rounded-l-xl shadow-xl transition-transform duration-300">
+                <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
                   <SheetHeader>
-                    <SheetTitle className="text-2xl font-bold text-primary">{idea.title}</SheetTitle>
+                    <SheetTitle>{idea.title}</SheetTitle>
                   </SheetHeader>
-                  <div className="mt-6 space-y-6">
-                    {/* Summary Section */}
-                    <div className="border-b pb-4">
-                      <h4 className="text-lg font-semibold text-foreground mb-2">Summary</h4>
-                      <p className="text-sm text-muted-foreground leading-relaxed">{idea.summary}</p>
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold">Summary</h4>
+                      <p className="text-sm">{idea.summary}</p>
                     </div>
-
-                    {/* Unmet Needs Section */}
                     {idea.unmet_needs && idea.unmet_needs.length > 0 && (
-                      <div className="border-b pb-4">
-                        <h4 className="text-lg font-semibold text-foreground mb-2">Unmet Needs</h4>
-                        <ul className="text-sm text-muted-foreground list-disc list-inside space-y-2">
+                      <div>
+                        <h4 className="font-semibold">Unmet Needs</h4>
+                        <ul className="text-sm list-disc list-inside">
                           {idea.unmet_needs.map((need, index) => (
-                            <li key={index} className="hover:text-primary transition-colors">{need}</li>
+                            <li key={index}>{need}</li>
                           ))}
                         </ul>
                       </div>
                     )}
-
-                    {/* Product Ideas Section */}
                     {idea.product_idea && idea.product_idea.length > 0 && (
-                      <div className="border-b pb-4">
-                        <h4 className="text-lg font-semibold text-foreground mb-2">Product Ideas</h4>
-                        <ul className="text-sm text-muted-foreground list-disc list-inside space-y-2">
+                      <div>
+                        <h4 className="font-semibold">Product Ideas</h4>
+                        <ul className="text-sm list-disc list-inside">
                           {idea.product_idea.map((idea, index) => (
-                            <li key={index} className="hover:text-primary transition-colors">{idea}</li>
+                            <li key={index}>{idea}</li>
                           ))}
                         </ul>
                       </div>
                     )}
-
-                    {/* Proof of Concept Section */}
                     {idea.proof_of_concept && (
-                      <div className="border-b pb-4">
-                        <h4 className="text-lg font-semibold text-foreground mb-2">Proof of Concept</h4>
-                        <p className="text-sm text-muted-foreground leading-relaxed">{idea.proof_of_concept}</p>
+                      <div>
+                        <h4 className="font-semibold">Proof of Concept</h4>
+                        <p className="text-sm">{idea.proof_of_concept}</p>
                       </div>
                     )}
-
-                    {/* Suggested Platforms Section */}
                     {idea.suggestedPlatforms && idea.suggestedPlatforms.length > 0 && (
-                      <div className="border-b pb-4">
-                        <h4 className="text-lg font-semibold text-foreground mb-2">Suggested Platforms</h4>
+                      <div>
+                        <h4 className="font-semibold">Suggested Platforms</h4>
                         <div className="flex flex-wrap gap-2">
                           {idea.suggestedPlatforms.map((platform, index) => (
-                            <Badge
-                              key={index}
-                              variant="outline"
-                              className="text-sm bg-secondary hover:bg-secondary/80 transition-colors"
-                            >
-                              {platform}
-                            </Badge>
+                            <Badge key={index} variant="outline">{platform}</Badge>
                           ))}
                         </div>
                       </div>
                     )}
-
-                    {/* Confidence Score Section with Progress Bar */}
-                    <div className="border-b pb-4">
-                      <h4 className="text-lg font-semibold text-foreground mb-2">Confidence Score</h4>
-                      <div className="w-full bg-gray-200 rounded-full h-2.5">
-                        <div
-                          className="bg-primary h-2.5 rounded-full transition-all duration-500"
-                          style={{ width: `${idea.confidenceScore}%` }}
-                        ></div>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-2">{idea.confidenceScore}%</p>
+                    <div>
+                      <h4 className="font-semibold">Confidence Score</h4>
+                      <p className="text-sm">{idea.confidenceScore}%</p>
                     </div>
-
-                    {/* Generated By Section */}
-                    <div className="border-b pb-4">
-                      <h4 className="text-lg font-semibold text-foreground mb-2">Generated By</h4>
-                      <p className="text-sm text-muted-foreground">{idea.generatedBy}</p>
+                    <div>
+                      <h4 className="font-semibold">Generated By</h4>
+                      <p className="text-sm">{idea.generatedBy}</p>
                     </div>
-
-                    {/* Source URL Section */}
                     {idea.source_url && (
                       <div>
-                        <h4 className="text-lg font-semibold text-foreground mb-2">Source URL</h4>
-                        <a
-                          href={idea.source_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-blue-600 hover:text-blue-800 transition-colors underline break-all"
-                          title="Opens in a new tab"
-                        >
+                        <h4 className="font-semibold">Source URL</h4>
+                        <a href={idea.source_url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
                           {idea.source_url}
                         </a>
                       </div>
