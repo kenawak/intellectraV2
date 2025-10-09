@@ -30,11 +30,12 @@ export const auth = betterAuth({
     schema,
   }),
   socialProviders: {
-    google: { 
-        clientId: process.env.GOOGLE_CLIENT_ID as string, 
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET as string, 
-    }, 
+    google: {
+        clientId: process.env.GOOGLE_CLIENT_ID as string,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+    },
 },
+  trustedOrigins: ["http://localhost:3000"],
   plugins: [
   //   polar({
   //     client: polarClient,
@@ -66,6 +67,5 @@ export const auth = betterAuth({
   //     ],
   // }),
   nextCookies(),
- 
   ]
 });

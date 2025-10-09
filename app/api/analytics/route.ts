@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, requireAdmin } from '@/lib/auth-utils';
+import { auth } from '@/lib/auth';
 import { db } from '@/db/drizzle';
 import { idea, bookmarkedIdea, userAnalytics } from '@/db/schema';
 import { count, eq } from 'drizzle-orm';
 
 export async function GET(req: NextRequest) {
   try {
-    // const session = await requireAuth(req);
-    // await requireAdmin(req); // This will throw if not admin
-    const userId = 'VOeNpacxjN1pLXXxgzvLmyG8y9PeEwb6'; // Real user ID
+    const session = await auth.api.getSession({ headers: req.headers })
+    const userId = session?.user.id; 
 
     // System analytics
     const totalPublicIdeas = await db.select({ count: count() }).from(idea);

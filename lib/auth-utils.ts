@@ -1,5 +1,6 @@
 import { auth } from './auth';
 import { NextRequest } from 'next/server';
+import { headers } from "next/headers";
 
 export async function getSession(req: NextRequest) {
   return await auth.api.getSession({ headers: req.headers });
@@ -11,7 +12,11 @@ export async function getUser(req: NextRequest) {
 }
 
 export async function requireAuth(req: NextRequest) {
-  const session = await getSession(req);
+
+  const session = await auth.api.getSession({
+      headers: req.headers
+  })
+  console.log("session", session)
   if (!session) {
     throw new Error('Unauthorized');
   }

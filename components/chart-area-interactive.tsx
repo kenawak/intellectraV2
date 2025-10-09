@@ -69,7 +69,9 @@ export function ChartAreaInteractive() {
   React.useEffect(() => {
     const fetchTokenUsage = async () => {
       try {
-        const response = await fetch('/api/analytics/token-usage')
+        const response = await fetch('/api/analytics/token-usage', {
+          credentials: 'include'
+        })
         if (response.ok) {
           const data = await response.json()
           const tokenUsageData: TokenUsage[] = data.tokenUsage
