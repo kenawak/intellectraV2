@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { optionalAuth } from '@/lib/auth-utils';
 import { db } from '@/db/drizzle';
-import { idea, bookmarkedIdea } from '@/db/schema';
-import { eq, notInArray, sql } from 'drizzle-orm';
+import { idea, bookmarkedIdea, vote } from '@/db/schema';
+import { eq, notInArray, sql, inArray } from 'drizzle-orm';
 
 export async function GET(req: NextRequest) {
   try {
@@ -26,20 +26,65 @@ export async function GET(req: NextRequest) {
       publicIdeas = await db.select().from(idea).orderBy(idea.createdAt);
     }
 
-    const formattedIdeas = publicIdeas.map((idea) => ({
-      id: idea.id,
-      title: idea.title,
-      summary: idea.summary,
-      unmet_needs: idea.unmetNeeds,
-      product_idea: idea.productIdea,
-      proof_of_concept: idea.proofOfConcept,
-      source_url: idea.sourceUrl,
-      prompt_used: idea.promptUsed,
-      createdAt: idea.createdAt.toISOString(),
-      confidenceScore: idea.confidenceScore || 85,
-      suggestedPlatforms: (idea.suggestedPlatforms && idea.suggestedPlatforms.length) ? idea.suggestedPlatforms : ["Web", "Mobile"],
-      generatedBy: 'System', // Since no userId in idea table
-    }));
+    // Get all idea IDs
+    const ideaIds = publicIdeas.map(i => i.id);
+
+    // Get vote counts for all ideas
+    const allVotes = ideaIds.length > 0 ? await db.select({
+      ideaId: vote.ideaId,
+      voteType: vote.voteType,
+      userId: vote.userId,
+      ipAddress: vote.ipAddress,
+      userAgent: vote.userAgent,
+    }).from(vote).where(inArray(vote.ideaId, ideaIds)) : [];
+
+    // Get current user's vote info
+    const ipAddress = req.headers.get('x-forwarded-for') ||
+                     req.headers.get('x-real-ip') ||
+                     'unknown';
+    const userAgent = req.headers.get('user-agent') || 'unknown';
+
+    const formattedIdeas = publicIdeas.map((idea) => {
+      const ideaVotes = allVotes.filter(v => v.ideaId === idea.id);
+      const upVotes = ideaVotes.filter(v => v.voteType === 'up').length;
+      const downVotes = ideaVotes.filter(v => v.voteType === 'down').length;
+
+      // Check user's vote
+      let userVote = null;
+      if (userId) {
+        const userVoteRecord = ideaVotes.find(v => v.userId === userId);
+        if (userVoteRecord) {
+          userVote = userVoteRecord.voteType;
+        }
+      }
+      if (!userVote) {
+        const ipVoteRecord = ideaVotes.find(v => v.ipAddress === ipAddress && v.userAgent === userAgent);
+        if (ipVoteRecord) {
+          userVote = ipVoteRecord.voteType;
+        }
+      }
+
+      return {
+        id: idea.id,
+        title: idea.title,
+        summary: idea.summary,
+        unmet_needs: idea.unmetNeeds,
+        product_idea: idea.productIdea,
+        proof_of_concept: idea.proofOfConcept,
+        source_url: idea.sourceUrl,
+        prompt_used: idea.promptUsed,
+        createdAt: idea.createdAt.toISOString(),
+        confidenceScore: idea.confidenceScore || 85,
+        suggestedPlatforms: Array.isArray(idea.suggestedPlatforms) && idea.suggestedPlatforms.length > 0 ? idea.suggestedPlatforms : ["Web", "Mobile"],
+        generatedBy: 'System', // Since no userId in idea table
+        votes: {
+          up: upVotes,
+          down: downVotes,
+          total: upVotes + downVotes,
+          userVote
+        }
+      };
+    });
 
     return NextResponse.json(formattedIdeas);
   } catch (err) {

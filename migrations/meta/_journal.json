@@ -36,6 +36,27 @@
       "when": 1759911432539,
       "tag": "0004_known_nebula",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1760119169807,
+      "tag": "0005_sweet_the_hunter",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1760119698172,
+      "tag": "0006_smiling_bloodscream",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1760126208420,
+      "tag": "0007_magical_proemial_gods",
+      "breakpoints": true
     }
   ]
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { IconBookmark, IconBookmarkFilled } from "@tabler/icons-react"
+import { IconBookmark, IconBookmarkFilled, IconChevronUp, IconChevronDown } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -20,6 +20,12 @@ interface Idea {
   confidenceScore: number
   suggestedPlatforms: string[]
   generatedBy: string
+  votes: {
+    up: number
+    down: number
+    total: number
+    userVote: 'up' | 'down' | null
+  }
 }
 
 export default function PublicIdeasPage() {
@@ -57,6 +63,67 @@ export default function PublicIdeasPage() {
       }
     } catch (error) {
       console.error('Failed to bookmark:', error)
+    }
+  }
+
+  const handleVote = async (ideaId: string, voteType: 'up' | 'down') => {
+    try {
+      const response = await fetch('/api/ideas/vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ideaId, voteType }),
+      })
+      if (response.ok) {
+        const result = await response.json()
+        // Update the local state
+        setIdeas(prev => prev.map(idea => {
+          if (idea.id === ideaId) {
+            let newUp = idea.votes.up
+            let newDown = idea.votes.down
+            let newUserVote = idea.votes.userVote
+
+            if (result.action === 'added') {
+              if (voteType === 'up') {
+                newUp++
+                newUserVote = 'up'
+              } else {
+                newDown++
+                newUserVote = 'down'
+              }
+            } else if (result.action === 'updated') {
+              if (voteType === 'up') {
+                newUp++
+                newDown--
+                newUserVote = 'up'
+              } else {
+                newDown++
+                newUp--
+                newUserVote = 'down'
+              }
+            } else if (result.action === 'removed') {
+              if (idea.votes.userVote === 'up') {
+                newUp--
+              } else {
+                newDown--
+              }
+              newUserVote = null
+            }
+
+            return {
+              ...idea,
+              votes: {
+                up: newUp,
+                down: newDown,
+                total: newUp + newDown,
+                userVote: newUserVote
+              }
+            }
+          }
+          return idea
+        }))
+      }
+    } catch (error) {
+      console.error('Failed to vote:', error)
     }
   }
 
@@ -104,6 +171,30 @@ export default function PublicIdeasPage() {
                       <IconBookmark className="h-4 w-4" />
                     )}
                   </Button>
+                </div>
+              </div>
+              <div className="flex items-center gap-4 mt-2">
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleVote(idea.id, 'up')}
+                    className={`p-1 h-6 w-6 ${idea.votes.userVote === 'up' ? 'text-green-600' : 'text-gray-500'}`}
+                  >
+                    <IconChevronUp className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm font-medium">{idea.votes.up}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleVote(idea.id, 'down')}
+                    className={`p-1 h-6 w-6 ${idea.votes.userVote === 'down' ? 'text-red-600' : 'text-gray-500'}`}
+                  >
+                    <IconChevronDown className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm font-medium">{idea.votes.down}</span>
                 </div>
               </div>
             </CardHeader>

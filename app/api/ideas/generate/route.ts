@@ -1,16 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/auth-utils';
+import {auth} from '@/lib/auth'
 import { generateIdeas } from '@/lib/idea-generation';
 import { db } from '@/db/drizzle';
-import { userAnalytics, tokenUsage, userprofile } from '@/db/schema';
+import { userAnalytics, tokenUsage, userprofile, idea } from '@/db/schema';
 import { eq, sql, desc } from 'drizzle-orm';
 
 export async function GET(req: NextRequest) {
   try {
-    console.log(req)
-    // const session = await requireAuth(req);
-    // const userId = session.user.id;
-    const userId = 'VOeNpacxjN1pLXXxgzvLmyG8y9PeEwb6'; // Real user ID
+    const session = await auth.api.getSession({
+          headers: req.headers
+      })
+    const userId = session?.user.id;
+    // const userId = 'VOeNpacxjN1pLXXxgzvLmyG8y9PeEwb6'; // Real user ID
+    console.log("user id", userId)
+
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     // Get current user analytics
     const userAnalytic = await db.select().from(userAnalytics).where(eq(userAnalytics.userId, userId)).limit(1);
@@ -71,6 +77,24 @@ export async function GET(req: NextRequest) {
 
     const result = await generateIdeas(req.nextUrl.searchParams.get('prompt') || 'developer tool pain points');
     const { ideas, usage } = result;
+
+    // Save all generated ideas to public ideas table
+    const ideasToInsert = ideas.map((ideaData: any) => ({
+      id: crypto.randomUUID(),
+      title: ideaData.title,
+      summary: ideaData.summary,
+      unmetNeeds: ideaData.unmet_needs || [],
+      productIdea: ideaData.product_idea || [],
+      proofOfConcept: ideaData.proof_of_concept || "",
+      sourceUrl: ideaData.source_url || null,
+      promptUsed: req.nextUrl.searchParams.get('prompt') || 'developer tool pain points',
+      confidenceScore: ideaData.confidenceScore || 85,
+      suggestedPlatforms: ideaData.suggestedPlatforms || ["Web", "Mobile"],
+      creationDate: new Date().toISOString().split('T')[0],
+      ideaSource: 'generated',
+    }));
+
+    await db.insert(idea).values(ideasToInsert);
 
     const totalTokens = usage?.totalTokenCount || 0;
     const inputTokens = usage?.promptTokenCount || 0;

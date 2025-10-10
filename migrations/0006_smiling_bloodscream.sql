@@ -1,0 +1,2 @@
+ALTER TABLE "idea" ALTER COLUMN "suggested_platforms" SET DATA TYPE jsonb USING to_json(suggested_platforms)::jsonb;--> statement-breakpoint
+ALTER TABLE "idea" ALTER COLUMN "suggested_platforms" SET DEFAULT '[]'::jsonb;

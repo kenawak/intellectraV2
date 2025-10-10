@@ -33,7 +33,7 @@ async function generateDeveloperSaaSIdeas(formattedPosts: string) {
             "source_url": "<URL to the original post>",
 
             "confidenceScore": <1–100, how strong this idea feels>,
-            "suggestedPlatforms": ["Reddit", "X", "IndieHackers"],
+            "suggestedPlatforms": [{"name": "Platform Name", "link": "https://example.com"}, ...],
             "creationDate": "<e.g. 'May 10, 2025'>",
             "ideaSource": "<e.g. 'Reddit comment thread', 'IndieHackers post', or 'Developer Portal Analysis'>"
           }
@@ -42,6 +42,7 @@ async function generateDeveloperSaaSIdeas(formattedPosts: string) {
           - Focus on *developers* (indie hackers, devs, engineers).
           - Extract *non-obvious*, clearly stated or implied needs.
           - Be specific and concise.
+          - For suggestedPlatforms, research and suggest real platforms where this idea could be launched or promoted, providing actual links to those platforms as evidence.
           - Only return a raw JSON array. No text, markdown, or explanation.
           `
         }]

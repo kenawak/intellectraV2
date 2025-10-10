@@ -109,7 +109,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavMain items={navMain} />
         {analytics && (
           <div className="mx-3 my-2 space-y-3">
-            <Card>
+            {/* <Card>
               <CardHeader>
                 <CardTitle className="text-xs text-muted-foreground">
                   Bookmarks
@@ -120,7 +120,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   {analytics.systemAnalytics.bookmarks} saved
                 </Badge>
               </CardContent>
-            </Card>
+            </Card> */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-xs text-muted-foreground">

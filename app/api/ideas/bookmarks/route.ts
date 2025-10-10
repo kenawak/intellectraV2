@@ -22,7 +22,8 @@ export async function GET(req: NextRequest) {
       prompt_used: b.promptUsed,
       createdAt: b.createdAt.toISOString(),
       confidenceScore: 85,
-      suggestedPlatforms: ["Web", "Mobile"],
+      suggestedPlatforms: [{"name": "Web", "link": "https://developer.mozilla.org/en-US/docs/Web"}, {"name": "Mobile", "link": "https://developer.android.com"}],
+      generatedBy: "User",
     }));
 
     return NextResponse.json(formattedBookmarks);

@@ -103,7 +103,7 @@ export const idea = pgTable("idea", {
   sourceUrl: text("source_url").unique(),
   promptUsed: text("prompt_used"),
   confidenceScore: integer("confidence_score"),
-  suggestedPlatforms: text("suggested_platforms").array().default([]),
+  suggestedPlatforms: jsonb("suggested_platforms").default([]),
   creationDate: text("creation_date").default(""),
   ideaSource: text("idea_source").default(""),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -135,5 +135,18 @@ export const tokenUsage = pgTable("token_usage", {
   totalTokens: integer("total_tokens"),
 });
 
+export const vote = pgTable("vote", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .references(() => user.id, { onDelete: "cascade" }),
+  ideaId: text("idea_id")
+    .notNull()
+    .references(() => idea.id, { onDelete: "cascade" }),
+  voteType: text("vote_type").notNull(), // 'up' or 'down'
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
 
-export const schema = {user, session, account, verification, userprofile, userAnalytics, idea, bookmarkedIdea, tokenUsage};
+
+export const schema = {user, session, account, verification, userprofile, userAnalytics, idea, bookmarkedIdea, tokenUsage, vote};

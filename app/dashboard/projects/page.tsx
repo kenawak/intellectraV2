@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { IconBookmark, IconBookmarkFilled } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -22,15 +21,15 @@ interface Idea {
   generatedBy: string
 }
 
-export default function PublicIdeasPage() {
+export default function BookmarkedProjectsPage() {
   const [ideas, setIdeas] = useState<Idea[]>([])
   const [loading, setLoading] = useState(true)
-  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     const fetchIdeas = async () => {
       try {
-        const response = await fetch('/api/ideas/public')
+        const response = await fetch('/api/ideas/bookmarks')
+        console.log(response)
         if (response.ok) {
           const data = await response.json()
           setIdeas(data)
@@ -45,25 +44,11 @@ export default function PublicIdeasPage() {
     fetchIdeas()
   }, [])
 
-  const handleBookmark = async (idea: Idea) => {
-    try {
-      const response = await fetch('/api/ideas/bookmark', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(idea),
-      })
-      if (response.ok) {
-        setBookmarkedIds(prev => new Set(prev).add(idea.id))
-      }
-    } catch (error) {
-      console.error('Failed to bookmark:', error)
-    }
-  }
 
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">Public Project Ideas</h1>
+        <h1 className="text-3xl font-bold mb-8">Bookmarked Projects</h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
             <Card key={i} className="animate-pulse">
@@ -83,29 +68,15 @@ export default function PublicIdeasPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Public Project Ideas</h1>
+      <h1 className="text-3xl font-bold mb-8">Bookmarked Projects</h1>
+      {ideas && (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {ideas.map((idea) => (
           <Card key={idea.id} className="relative hover:shadow-lg transition-shadow">
             <CardHeader className="pb-2">
               <div className="flex justify-between items-start">
                 <CardTitle className="text-lg line-clamp-2">{idea.title}</CardTitle>
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">{idea.confidenceScore}%</Badge>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleBookmark(idea)}
-                    disabled={bookmarkedIds.has(idea.id)}
-                    aria-label={bookmarkedIds.has(idea.id) ? "Bookmarked" : "Bookmark idea"}
-                  >
-                    {bookmarkedIds.has(idea.id) ? (
-                      <IconBookmarkFilled className="h-4 w-4" />
-                    ) : (
-                      <IconBookmark className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
+                <Badge variant="secondary">{idea.confidenceScore}%</Badge>
               </div>
             </CardHeader>
             <CardContent>
@@ -172,15 +143,29 @@ export default function PublicIdeasPage() {
                       <div className="border-b pb-4">
                         <h4 className="text-lg font-semibold text-foreground mb-2">Suggested Platforms</h4>
                         <div className="flex flex-wrap gap-2">
-                          {idea.suggestedPlatforms.map((platform, index) => (
-                            <Badge
-                              key={index}
-                              variant="outline"
-                              className="text-sm bg-secondary hover:bg-secondary/80 transition-colors"
-                            >
-                              {platform}
-                            </Badge>
-                          ))}
+                          {idea.suggestedPlatforms.map((platform, index) => {
+                            const name = typeof platform === 'string' ? platform : platform.name;
+                            const link = typeof platform === 'string' ? null : platform.link;
+                            return link ? (
+                              <a
+                                key={index}
+                                href={link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-input bg-secondary hover:bg-secondary/80 text-secondary-foreground"
+                              >
+                                {name}
+                              </a>
+                            ) : (
+                              <Badge
+                                key={index}
+                                variant="outline"
+                                className="text-sm bg-secondary hover:bg-secondary/80 transition-colors"
+                              >
+                                {name}
+                              </Badge>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -224,7 +209,20 @@ export default function PublicIdeasPage() {
             </CardContent>
           </Card>
         ))}
+      </div>)}
+      {!ideas && 
+      (
+        <div className="ml-auto flex items-center gap-2">
+        <Button variant="ghost" asChild size="sm" className="hidden sm:flex relative">
+          <a
+            href="/dashboard/projects"
+            className="dark:text-foreground flex items-center gap-2"
+          >
+           Public Projects
+          </a>
+        </Button>
       </div>
+     )}
     </div>
   )
 }
