@@ -1,36 +1,137 @@
-import { AppSidebar } from "@/components/app-sidebar"
-import { ChartAreaInteractive } from "@/components/chart-area-interactive"
-import  {SubscriberDataTable}  from "@/components/data-table"
-import { SectionCards } from "@/components/section-cards"
-import { SiteHeader } from "@/components/site-header"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import  {subscriberData} from "./data"
+"use client"
+import { useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {toast} from "sonner" 
+export default function Dashboard() {
+  const router = useRouter();
 
-import Newsletter from "@/components/newsletter"
+  const signOut = async () => {
+    await authClient.signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          router.push("/login"); // redirect to login page
+        },
+      },
+    });
+  };
+  const deleteAccount = async () => {
+    try{
+      await authClient.deleteUser({
+        callbackURL: "/" 
+    });
+    toast.success("Account deleted")
+    }
+    catch(error){
+        const e = error as Error
+      toast.error(e.message)
+    }}
+  const handleCheckout = async (productId?: string, slug?: string) => {
+    await authClient.checkout({
+      ...(productId && { products: [productId] }),
+      ...(slug && { slug }),
+    });
+  };
 
-export default function NewsletterDashboard() {
   return (
-    <>
-    <div className="">
-    <SidebarProvider>
-      <AppSidebar variant="inset" className=""/>
-      <SidebarInset>
-        <SiteHeader />
-        <div className="flex flex-1 flex-col ">
-          <div className=" flex flex-1 flex-col gap-2">
-            <div className="flex flex-col gap-4  md:gap-6 w-full">
-              <SectionCards />
-              <div className=" grid md:grid-cols-2">
-                <ChartAreaInteractive />
-                <Newsletter/>
-              </div>
-              <SubscriberDataTable data={subscriberData} />
-            </div>
-          </div>
+    <div className="p-6 space-y-8">
+      {/* Dashboard Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <div className="space-x-2">
+          <Button type="button" variant="default" onClick={signOut}>
+            Sign out
+          </Button>
+          <Button type="button" variant="destructive" onClick={deleteAccount}>
+            Delete Account
+          </Button>
         </div>
-      </SidebarInset>
-    </SidebarProvider>
+      </div>
+
+      {/* Product Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Freemium */}
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle>Freemium</CardTitle>
+            <CardDescription>
+              Get started with basic features, free forever.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              className="w-full"
+              variant="secondary"
+              onClick={() => handleCheckout("88c88042-ede8-4290-8e6e-b96291bf4c87")}
+            >
+              Use for Free
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Starter */}
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle>Starter Plan</CardTitle>
+            <CardDescription>
+              Great for individuals just starting out.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              className="w-full"
+              onClick={() => handleCheckout("bd530514-b794-4ff8-be2a-db124809570b")}
+            >
+              Purchase Starter
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Pro */}
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle>Pro Plan</CardTitle>
+            <CardDescription>
+              Unlock premium features with the Pro plan.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              className="w-full"
+              onClick={() =>
+                handleCheckout("pro")
+              }
+            >
+              Purchase Pro
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Enterprise */}
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle>Enterprise Plan</CardTitle>
+            <CardDescription>
+              Custom features for growing teams and businesses.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              className="w-full"
+              onClick={() => handleCheckout(undefined, "enterprise")}
+            >
+              Purchase Enterprise
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     </div>
-    </>
-  )
+  );
 }

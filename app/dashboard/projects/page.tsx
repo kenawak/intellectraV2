@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import Link  from "next/link" 
 
 interface Idea {
   id: string
@@ -17,11 +18,11 @@ interface Idea {
   prompt_used: string
   createdAt: string
   confidenceScore: number
-  suggestedPlatforms: string[]
+  suggestedPlatforms: { name: string; link?: string }[]
   generatedBy: string
 }
 
-export default function BookmarkedProjectsPage() {
+export default function WorkspacePage() {
   const [ideas, setIdeas] = useState<Idea[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -48,7 +49,7 @@ export default function BookmarkedProjectsPage() {
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">Bookmarked Projects</h1>
+        <h1 className="text-3xl font-bold mb-8">Project Workspace</h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
             <Card key={i} className="animate-pulse">
@@ -68,7 +69,7 @@ export default function BookmarkedProjectsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Bookmarked Projects</h1>
+      <h1 className="text-3xl font-bold mb-8">Project Workspace</h1>
       {ideas && (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {ideas.map((idea) => (
@@ -89,12 +90,21 @@ export default function BookmarkedProjectsPage() {
                   <p className="text-sm line-clamp-2">{idea.product_idea[0]}</p>
                 </div>
               )}
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="outline" size="sm" className="w-full">
-                    View Details
-                  </Button>
-                </SheetTrigger>
+              <div className="flex gap-2">
+                <Button
+                  variant="default"
+                  size="sm"
+                  asChild
+                  className="flex-1"
+                >
+                  <Link href={`/dashboard/workspace/${idea.id}`}>Open Workspace</Link>
+                </Button>
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" size="sm" className="flex-1">
+                      View Details
+                    </Button>
+                  </SheetTrigger>
                 <SheetContent className="w-full sm:max-w-2xl overflow-y-auto bg-background p-6 rounded-l-xl shadow-xl transition-transform duration-300">
                   <SheetHeader>
                     <SheetTitle className="text-2xl font-bold text-primary">{idea.title}</SheetTitle>
@@ -206,6 +216,7 @@ export default function BookmarkedProjectsPage() {
                   </div>
                 </SheetContent>
               </Sheet>
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -223,6 +234,7 @@ export default function BookmarkedProjectsPage() {
         </Button>
       </div>
      )}
-    </div>
-  )
+
+   </div>
+ )
 }

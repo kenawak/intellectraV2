@@ -21,8 +21,14 @@ export async function GET(req: NextRequest) {
       source_url: b.sourceUrl,
       prompt_used: b.promptUsed,
       createdAt: b.createdAt.toISOString(),
-      confidenceScore: 85,
-      suggestedPlatforms: [{"name": "Web", "link": "https://developer.mozilla.org/en-US/docs/Web"}, {"name": "Mobile", "link": "https://developer.android.com"}],
+      confidenceScore: b.confidenceScore,
+      suggestedPlatforms: b.suggestedPlatforms ? (() => {
+        try {
+          return JSON.parse(b.suggestedPlatforms)
+        } catch {
+          return []
+        }
+      })() : [],
       generatedBy: "User",
     }));
 

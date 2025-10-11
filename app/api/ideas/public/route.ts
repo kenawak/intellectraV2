@@ -74,8 +74,8 @@ export async function GET(req: NextRequest) {
         source_url: idea.sourceUrl,
         prompt_used: idea.promptUsed,
         createdAt: idea.createdAt.toISOString(),
-        confidenceScore: idea.confidenceScore || 85,
-        suggestedPlatforms: Array.isArray(idea.suggestedPlatforms) && idea.suggestedPlatforms.length > 0 ? idea.suggestedPlatforms : ["Web", "Mobile"],
+        confidenceScore: idea.confidenceScore,
+        suggestedPlatforms: idea.suggestedPlatforms,
         generatedBy: 'System', // Since no userId in idea table
         votes: {
           up: upVotes,

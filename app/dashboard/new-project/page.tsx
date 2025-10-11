@@ -34,6 +34,7 @@ import { cn } from '@/lib/utils';
 import { IconMicrophone, IconPaperclip, IconRotate, IconBookmark, IconBookmarkFilled } from '@tabler/icons-react';
 import { nanoid } from 'nanoid';
 import { type FormEventHandler, useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 
 type ChatMessage = {
   id: string;
@@ -418,6 +419,13 @@ const Example = () => {
                           <IconBookmark className="h-4 w-4" />
                         )}
                       </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        asChild
+                      >
+                        <Link href={`/dashboard/workspace/${idea.id}`}>Open Workspace</Link>
+                      </Button>
                     </div>
                   </div>
                 </CardHeader>
@@ -570,6 +578,7 @@ const Example = () => {
           </PromptInputToolbar>
         </PromptInput>
       </div>
+
     </div>
   );
 };

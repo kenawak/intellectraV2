@@ -65,6 +65,7 @@ interface AnalyticsData {
     generationAttempts: number
     remainingAttempts: number
     resetTime: string | null
+    avgConfidence: number
   }
 }
 
@@ -128,16 +129,6 @@ export function ChartAreaInteractive() {
     return date >= startDate
   })
 
-  if (loading) {
-    return (
-      <Card className="@container/card">
-        <CardHeader>
-          <CardTitle>Token Usage</CardTitle>
-          <CardDescription>Loading...</CardDescription>
-        </CardHeader>
-      </Card>
-    )
-  }
 
   // Show generate projects message for new users
   if (analytics && analytics.userAnalytics.generationAttempts === 0) {

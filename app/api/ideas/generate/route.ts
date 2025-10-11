@@ -88,8 +88,8 @@ export async function GET(req: NextRequest) {
       proofOfConcept: ideaData.proof_of_concept || "",
       sourceUrl: ideaData.source_url || null,
       promptUsed: req.nextUrl.searchParams.get('prompt') || 'developer tool pain points',
-      confidenceScore: ideaData.confidenceScore || 85,
-      suggestedPlatforms: ideaData.suggestedPlatforms || ["Web", "Mobile"],
+      confidenceScore: ideaData.confidenceScore,
+      suggestedPlatforms: ideaData.suggestedPlatforms,
       creationDate: new Date().toISOString().split('T')[0],
       ideaSource: 'generated',
     }));

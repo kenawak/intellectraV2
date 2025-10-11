@@ -22,6 +22,8 @@ export async function POST(req: NextRequest) {
       "proof_of_concept",
       "source_url",
       "prompt_used",
+      "confidenceScore",
+      "suggestedPlatforms",
     ];
 
     const filteredData = Object.fromEntries(Object.entries(ideaData).filter(([key]) => validFields.includes(key))) as any;
@@ -40,6 +42,8 @@ export async function POST(req: NextRequest) {
       proofOfConcept: filteredData.proof_of_concept || "",
       sourceUrl: filteredData.source_url || null,
       promptUsed: filteredData.prompt_used || null,
+      confidenceScore: filteredData.confidenceScore || null,
+      suggestedPlatforms: JSON.stringify(filteredData.suggestedPlatforms || []),
     } as typeof bookmarkedIdea.$inferInsert;
 
     const saved = await db.insert(bookmarkedIdea).values(dataToSave).returning();
@@ -47,8 +51,14 @@ export async function POST(req: NextRequest) {
     const formattedIdea = {
       ...saved[0],
       createdAt: saved[0].createdAt.toISOString(),
-      confidenceScore: 85,
-      suggestedPlatforms: ["Web", "Mobile"],
+      confidenceScore: saved[0].confidenceScore,
+      suggestedPlatforms: saved[0].suggestedPlatforms ? (() => {
+        try {
+          return JSON.parse(saved[0].suggestedPlatforms)
+        } catch {
+          return []
+        }
+      })() : [],
     };
 
     return NextResponse.json({ message: "Bookmarked successfully", idea: formattedIdea }, { status: 201 });
@@ -102,8 +112,14 @@ export async function DELETE(req: NextRequest) {
       source_url: b.sourceUrl,
       prompt_used: b.promptUsed,
       createdAt: b.createdAt.toISOString(),
-      confidenceScore: 85,
-      suggestedPlatforms: ["Web", "Mobile"],
+      confidenceScore: b.confidenceScore,
+      suggestedPlatforms: b.suggestedPlatforms ? (() => {
+        try {
+          return JSON.parse(b.suggestedPlatforms)
+        } catch {
+          return []
+        }
+      })() : [],
     }));
 
     return NextResponse.json(formattedBookmarks);

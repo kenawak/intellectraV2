@@ -103,9 +103,13 @@ export const idea = pgTable("idea", {
   sourceUrl: text("source_url").unique(),
   promptUsed: text("prompt_used"),
   confidenceScore: integer("confidence_score"),
-  suggestedPlatforms: jsonb("suggested_platforms").default([]),
+  suggestedPlatforms: text("suggested_platforms").default("[]"),
   creationDate: text("creation_date").default(""),
   ideaSource: text("idea_source").default(""),
+  requirements: text("requirements"),
+  design: text("design"),
+  tasks: text("tasks"),
+  codeStubs: jsonb("code_stubs"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -119,6 +123,12 @@ export const bookmarkedIdea = pgTable("bookmarked_idea", {
   proofOfConcept: text("proof_of_concept").default(""),
   sourceUrl: text("source_url"),
   promptUsed: text("prompt_used"),
+  confidenceScore: integer("confidence_score"),
+  suggestedPlatforms: jsonb("suggested_platforms").default([]),
+  requirements: text("requirements"),
+  design: text("design"),
+  tasks: text("tasks"),
+  codeStubs: jsonb("code_stubs"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
