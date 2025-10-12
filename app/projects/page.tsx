@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { IconBookmark, IconBookmarkFilled, IconChevronUp, IconChevronDown } from "@tabler/icons-react"
+import { IconBookmark, IconBookmarkFilled, IconArrowBigUp, IconArrowBigUpFilled, IconArrowBigDown, IconArrowBigDownFilled  } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -179,10 +179,13 @@ export default function PublicIdeasPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => handleVote(idea.id, 'up')}
-                    className={`p-1 h-6 w-6 ${idea.votes.userVote === 'up' ? 'text-green-600' : 'text-gray-500'}`}
+                    className={`p-1 h-6 w-6`}
                   >
-                    <IconChevronUp className="h-4 w-4" />
-                  </Button>
+                    {idea.votes.userVote === 'up' ?
+                    <IconArrowBigUpFilled className="h-4 w-4" />:
+                    <IconArrowBigUp className="h-4 w-4" /> 
+                    }
+                    </Button>
                   <span className="text-sm font-medium">{idea.votes.up}</span>
                 </div>
                 <div className="flex items-center gap-1">
@@ -190,9 +193,14 @@ export default function PublicIdeasPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => handleVote(idea.id, 'down')}
-                    className={`p-1 h-6 w-6 ${idea.votes.userVote === 'down' ? 'text-red-600' : 'text-gray-500'}`}
+                    className={`p-1 h-6 w-6`}
                   >
-                    <IconChevronDown className="h-4 w-4" />
+                    {
+                      idea.votes.userVote === 'down' ?
+                      <IconArrowBigDownFilled   className="h-4 w-4" /> :
+                      <IconArrowBigDown   className="h-4 w-4" /> 
+                      
+                    }
                   </Button>
                   <span className="text-sm font-medium">{idea.votes.down}</span>
                 </div>

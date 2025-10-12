@@ -41,6 +41,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       design: ideaData.design,
       tasks: ideaData.tasks,
       codeStubs: ideaData.codeStubs,
+      cursorPrompt: ideaData.cursorPrompt,
     });
   } catch (err) {
     console.error(err);

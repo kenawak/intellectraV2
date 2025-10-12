@@ -1,6 +1,5 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { IconTrendingUp } from "@tabler/icons-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -14,45 +13,27 @@ import {
 } from "@/components/ui/card"
 
 interface AnalyticsData {
-   systemAnalytics: {
-     bookmarks: number
-     totalPublicIdeas: number
-     avgConfidence: number
-   }
-   userAnalytics: {
-     generationAttempts: number
-     remainingAttempts: number
-     resetTime: string | null
-     avgConfidence: number
-   }
- }
-
-export function SectionCards() {
-  const [data, setData] = useState<AnalyticsData | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const fetchAnalytics = async () => {
-      try {
-        const response = await fetch('/api/analytics')
-        if (response.ok) {
-          const analyticsData = await response.json()
-          setData(analyticsData)
-        }
-      } catch (error) {
-        console.error('Failed to fetch analytics:', error)
-      } finally {
-        setLoading(false)
-      }
+    systemAnalytics: {
+      bookmarks: number
+      totalPublicIdeas: number
+      avgConfidence: number
     }
+    userAnalytics: {
+      generationAttempts: number
+      remainingAttempts: number
+      resetTime: string | null
+      avgConfidence: number
+    }
+  }
 
-    fetchAnalytics()
-  }, [])
+interface SectionCardsProps {
+  analytics: AnalyticsData | null
+}
 
-
-  if (!data) {
+export function SectionCards({ analytics }: SectionCardsProps) {
+  if (!analytics) {
     return (
-      <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+      <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-3">
         <Card className="@container/card">
           <CardHeader>
             <CardDescription>Error loading data</CardDescription>
@@ -68,7 +49,7 @@ export function SectionCards() {
         <CardHeader>
           <CardDescription>Total Ideas Generated</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {data.systemAnalytics.totalPublicIdeas}
+            {analytics.systemAnalytics.totalPublicIdeas}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
@@ -90,7 +71,7 @@ export function SectionCards() {
         <CardHeader>
           <CardDescription>My Avg. Confidence</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {data.userAnalytics.avgConfidence}%
+            {analytics.userAnalytics.avgConfidence}%
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
@@ -112,7 +93,7 @@ export function SectionCards() {
         <CardHeader>
           <CardDescription>Total Bookmarks</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {data.systemAnalytics.bookmarks}
+            {analytics.systemAnalytics.bookmarks}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">

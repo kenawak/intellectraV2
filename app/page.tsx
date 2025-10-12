@@ -2,16 +2,107 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
 import { FlickeringGrid } from '@/components/ui/shadcn-io/flickering-grid';
+import { GradientBars } from '@/components/ui/gradient-bars';
+import { Blocks, Bot, ChartPie, Dribbble, Film, Github, MessageCircle, Settings2, Twitch, Twitter } from "lucide-react";
+import React from "react";
+import { Timeline } from "@/components/ui/timeline";
 
+const features = [
+  {
+    icon: Bot,
+    title: "AI-Powered Idea Generation",
+    description:
+      "Leverage advanced AI to brainstorm and generate innovative SaaS ideas tailored to market trends and user needs.",
+  },
+  {
+    icon: Settings2,
+    title: "Automated Spec Creation",
+    description:
+      "Automatically create detailed project specifications, including features, architecture, and technical requirements.",
+  },
+  {
+    icon: Blocks,
+    title: "Code Scaffolding",
+    description:
+      "Generate production-ready starter code with best practices, security, and scalable structures for rapid development.",
+  },
+  {
+    icon: Film,
+    title: "GitHub Integration",
+    description:
+      "Analyze existing GitHub projects, generate code prompts, and integrate seamlessly with your development workflow.",
+  },
+  {
+    icon: ChartPie,
+    title: "Token Usage Analytics",
+    description:
+      "Monitor and analyze AI token usage across projects with detailed reports and insights for optimization.",
+  },
+  {
+    icon: MessageCircle,
+    title: "Collaborative Workspaces",
+    description:
+      "Work together in shared workspaces, manage projects, and track progress with team collaboration features.",
+  },
+];
+
+const timelineData = [
+  {
+    title: "Idea Generation",
+    content: (
+      <div>
+        <p className="text-lg mb-3 font-medium">Generate innovative SaaS ideas with AI. Kick off your project by exploring unique concepts tailored to market needs.</p>
+        <img
+              src="/undraw_ideas.svg"
+              alt="startup template"
+              width={500}
+              height={200}
+              className="mx-auto block"
+             />
+      </div>
+    ),
+  },
+  {
+    title: "Specification Creation",
+    content: (
+      <div>
+        <p className="text-lg mb-3 font-medium">Build detailed project specs automatically. Create comprehensive technical docs and implementation plans with AI assistance.</p>
+        <img
+              src="/undraw_ai-agent_pdkp.svg"
+              alt="startup template"
+              width={500}
+              height={500}
+              className="mx-auto block"
+              />
+        </div>
+    ),
+  },
+  {
+    title: "Code Scaffolding",
+    content: (
+      <div>
+        <p className="text-xl mb-3 font-medium">Generate production-ready starter code. Accelerate development with scalable, secure code structures built by AI.</p>
+        <img
+              src="/undraw_open-source_g069.svg"
+              alt="startup template"
+              width={500}
+              height={500}
+              className="mx-auto block"
+              />
+            </div>
+    ),
+  },
+];
 export default function Home() {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       {/* Hero Section with FlickeringGrid */}
       <header className="relative min-h-screen flex items-center justify-center text-center px-4 overflow-hidden">
         <FlickeringGrid
-          className="z-0 absolute inset-0 size-full"
+          className="z-0 absolute inset-0 size-full bg-accent"
           squareSize={4}
           gridGap={6}
           color="#6B7280"
@@ -20,10 +111,10 @@ export default function Home() {
         />
         <div className="relative z-10">
           <h1 className="text-5xl md:text-6xl font-bold mb-4 animate-fade-in">
-            Turn Ideas into Actionable Projects
+            Supercharge Your SaaS Ideas with AI
           </h1>
           <p className="text-xl mb-6 animate-fade-in-delay">
-            Generate, design, and build with cutting-edge AI tools.
+            Turn your concepts into reality—generate groundbreaking ideas, craft precise specs, and build ready-to-launch code using advanced AI technology.
           </p>
           <Button
             asChild
@@ -34,45 +125,63 @@ export default function Home() {
           </Button>
         </div>
       </header>
+      {/* How It Works Section */}
+      <section className="pt-10 pb-12  px-4 bg-secondary">
+      <h2 className="text-4xl sm:text-5xl font-semibold tracking-tight text-center">
+How It Works
+</h2>
+        <Timeline data={timelineData} />
+      </section>
 
-      {/* Simplified Features Section */}
-      <section className="py-12 px-4">
-        <h2 className="text-3xl font-bold text-center mb-8">Why Choose Us</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-5xl mx-auto">
-          {['Idea Generation', 'Spec Creation', 'Code Scaffolding'].map((feature, index) => (
-            <Card
-              key={index}
-              className="border-none bg-card hover:bg-secondary/50 transition-colors duration-300"
+      {/* Features Section */}
+      <section className="py-12 px-4 bg-secondary/60">
+        <h2 className="text-4xl sm:text-5xl font-semibold tracking-tight text-center">
+          Unleash Your Creativity
+        </h2>
+        <div className="mt-10 sm:mt-16 grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-(--breakpoint-lg) mx-auto px-6">
+          {features.map((feature) => (
+            <div
+              key={feature.title}
+              className="flex flex-col border rounded-xl py-6 px-5 hover:bg-primary/5"
             >
-              <CardHeader>
-                <CardTitle className="text-lg text-foreground">{feature}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  {feature === 'Idea Generation'
-                    ? 'Unleash innovative SaaS ideas with AI.'
-                    : feature === 'Spec Creation'
-                    ? 'Build detailed specs with ease.'
-                    : 'Get instant code stubs to kickstart your project.'}
-                </p>
-              </CardContent>
-            </Card>
+              <div className="mb-4 h-10 w-10 flex items-center justify-center bg-muted rounded-full">
+                <feature.icon className="size-5" />
+              </div>
+              <span className="text-lg font-semibold">{feature.title}</span>
+              <p className="mt-1 text-foreground/80 text-[15px]">
+                {feature.description}
+              </p>
+            </div>
           ))}
         </div>
       </section>
 
       {/* Minimal Footer */}
-      <footer className="bg-background py-6 text-center mt-auto">
-        <div className="max-w-4xl mx-auto flex justify-center gap-6 px-4">
-          <Link href="/docs" className="text-muted-foreground hover:text-foreground text-sm">
-            Docs
-          </Link>
-          <Link href="/about" className="text-muted-foreground hover:text-foreground text-sm">
-            About
-          </Link>
-          <Link href="/contact" className="text-muted-foreground hover:text-foreground text-sm">
-            Contact
-          </Link>
+        <Separator/>
+      <footer className="bg-background pr-10 pl-6">
+        <div className="py-8 pr-10 pl-6 bg-background/50 flex flex-col-reverse sm:flex-row items-center justify-between gap-x-2 gap-y-5 xl:px-0">
+          {/* Copyright */}
+          <span className="text-muted-foreground">
+            &copy; {new Date().getFullYear()}{" "}
+            <Link href="/" target="_blank">
+              IntellectraV2
+            </Link>
+            . All rights reserved.
+          </span>
+          <div className="flex items-center gap-5 text-muted-foreground">
+            <Link href="#" target="_blank">
+              <Twitter className="h-5 w-5" />
+            </Link>
+            <Link href="#" target="_blank">
+              <Dribbble className="h-5 w-5" />
+            </Link>
+            <Link href="#" target="_blank">
+              <Twitch className="h-5 w-5" />
+            </Link>
+            <Link href="#" target="_blank">
+              <Github className="h-5 w-5" />
+            </Link>
+          </div>
         </div>
       </footer>
     </div>

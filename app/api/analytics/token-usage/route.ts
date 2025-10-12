@@ -17,6 +17,16 @@ export async function GET(req: NextRequest) {
 
     const userId = session.user.id
 
+    // Generate date range for the last 90 days
+    const endDate = new Date()
+    const startDate = new Date()
+    startDate.setDate(endDate.getDate() - 90)
+
+    const dateRange: string[] = []
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      dateRange.push(d.toISOString().split('T')[0])
+    }
+
     const dateExpr = sql<string>`DATE(${tokenUsage.timestamp})`
     const tokenUsageData = await db
       .select({
@@ -30,7 +40,21 @@ export async function GET(req: NextRequest) {
       .groupBy(dateExpr)
       .orderBy(dateExpr)
 
-    return NextResponse.json({ tokenUsage: tokenUsageData })
+    // Create a map of existing data for quick lookup
+    const usageMap = new Map(tokenUsageData.map(item => [item.date, item]))
+
+    // Fill in missing dates with 0 values
+    const completeTokenUsage = dateRange.map(date => {
+      const existing = usageMap.get(date)
+      return existing || {
+        date,
+        totalTokens: 0,
+        inputTokens: 0,
+        outputTokens: 0
+      }
+    })
+
+    return NextResponse.json({ tokenUsage: completeTokenUsage })
   } catch (error) {
     console.error("Error fetching token usage:", error)
     return NextResponse.json({ error: "Failed to fetch token usage" }, { status: 500 })

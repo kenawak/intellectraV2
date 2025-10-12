@@ -146,7 +146,12 @@ const WorkspacePage = () => {
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold mb-4">Idea Workspace</h1>
+      <Button>
+      <Link href="/dashboard/projects" >
+            Back to Projects
+          </Link>
+      </Button>
+        <h1 className="text-2xl font-bold mt-3 mb-4">Idea Workspace</h1>
 
         {/* Idea Details */}
         <Card className="mb-6">
@@ -221,6 +226,7 @@ const WorkspacePage = () => {
             {generating ? 'Generating...' : artifacts ? 'Regenerate Specs' : 'Generate Specs'}
           </Button>
         </div>
+
 
         {error && (
           <div className="p-4 bg-red-50 border border-red-200 rounded-md mb-6">

@@ -1,24 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
-import {auth} from '@/lib/auth'
-import { generateIdeas } from '@/lib/idea-generation';
+import { auth } from '@/lib/auth';
+import { GoogleGenAI } from '@google/genai';
 import { db } from '@/db/drizzle';
-import { userAnalytics, tokenUsage, userprofile, idea } from '@/db/schema';
-import { eq, sql, desc } from 'drizzle-orm';
+import { githubProject, tokenUsage, userprofile, userAnalytics } from '@/db/schema';
+import { eq, sql } from 'drizzle-orm';
+import { Octokit } from '@octokit/rest';
 
-export async function GET(req: NextRequest) {
+const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const octokit = new Octokit({
+  auth: process.env.GITHUB_TOKEN || undefined
+});
+
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth.api.getSession({
-          headers: req.headers
-      })
+      headers: req.headers
+    });
     const userId = session?.user.id;
-    // const userId = 'VOeNpacxjN1pLXXxgzvLmyG8y9PeEwb6'; // Real user ID
-    console.log("user id", userId)
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get current user analytics
+    const { id } = await params;
+    const userPrompt = req.nextUrl.searchParams.get('userPrompt');
+
+    // Get current user analytics for rate limiting
     const userAnalytic = await db.select().from(userAnalytics).where(eq(userAnalytics.userId, userId)).limit(1);
     const now = new Date();
 
@@ -32,27 +39,23 @@ export async function GET(req: NextRequest) {
     attempts += 1;
     const attemptsRateLimited = attempts > 5;
 
-    // Handle token rate limiting (pre-check with estimated max tokens)
+    // Handle token rate limiting
     let tokensUsed = userAnalytic[0]?.tokensUsedThisHour || 0;
     let tokensResetTime = userAnalytic[0]?.tokensResetTime;
     const tokenLimit = userAnalytic[0]?.tokenLimitPerHour || 100000;
-    // Get last token usage as estimate for this request
-    const lastUsage = await db.select().from(tokenUsage).where(eq(tokenUsage.userId, userId)).orderBy(desc(tokenUsage.timestamp)).limit(1);
-    const estimatedTokens = lastUsage[0]?.totalTokens || 20000; // Use last usage or default estimate
+    const estimatedTokens = 5000; // Estimate for cursor prompt generation
     if (!tokensResetTime || now > tokensResetTime) {
       tokensUsed = 0;
       tokensResetTime = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour
     }
     const tokensRateLimited = tokensUsed + estimatedTokens >= tokenLimit;
 
-    // If attempts or tokens rate limited, return early
     if (attemptsRateLimited || tokensRateLimited) {
       const errorMsg = attemptsRateLimited ? 'Generation attempts rate limit exceeded (5 per hour)' : 'Token rate limit exceeded';
-      // Still update analytics
       await db.insert(userAnalytics).values({
         id: crypto.randomUUID(),
         userId,
-        route: '/api/ideas/generate',
+        route: '/api/github-projects/[id]/generate-cursor-prompt',
         method: 'GET',
         generationAttemptsCount: attempts,
         generationAttemptsResetTime: attemptsResetTime,
@@ -75,39 +78,71 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: errorMsg }, { status: 429 });
     }
 
-    const result = await generateIdeas(req.nextUrl.searchParams.get('prompt') || 'developer tool pain points');
-    const { ideas, usage } = result;
+    // Get the GitHub project
+    const [project] = await db.select().from(githubProject).where(sql`${githubProject.id} = ${id} AND ${githubProject.userId} = ${userId}`);
+    if (!project) {
+      return NextResponse.json({ error: 'GitHub project not found' }, { status: 404 });
+    }
 
-    // Save all generated ideas to public ideas table
-    const ideasToInsert = ideas.map((ideaData: any) => ({
-      id: crypto.randomUUID(),
-      title: ideaData.title,
-      summary: ideaData.summary,
-      unmetNeeds: ideaData.unmet_needs || [],
-      productIdea: ideaData.product_idea || [],
-      proofOfConcept: ideaData.proof_of_concept || "",
-      sourceUrl: ideaData.source_url || null,
-      promptUsed: req.nextUrl.searchParams.get('prompt') || 'developer tool pain points',
-      confidenceScore: ideaData.confidenceScore,
-      suggestedPlatforms: JSON.stringify(ideaData.suggestedPlatforms || []),
-      creationDate: new Date().toISOString().split('T')[0],
-      ideaSource: 'generated',
-    }));
+    // Check if cursor prompt is already generated
+    if (project.cursorPrompt) {
+      return NextResponse.json({ cursorPrompt: project.cursorPrompt });
+    }
 
-    await db.insert(idea).values(ideasToInsert);
+    // Check if project has been analyzed
+    if (!project.isAnalyzed) {
+      return NextResponse.json({ error: 'Project must be analyzed first. Please analyze the project before generating prompts.' }, { status: 400 });
+    }
 
-    const totalTokens = usage?.totalTokenCount || 0;
-    const inputTokens = usage?.promptTokenCount || 0;
-    const outputTokens = usage?.candidatesTokenCount || 0;
+    // Use pre-analyzed data
+    const inferredTechStack = project.inferredTechStack || 'Unknown';
+    const keyFiles = project.keyFiles || [];
+
+    // Generate Cursor prompt using pre-analyzed data
+    const promptRes = await gemini.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: [{
+        role: 'user',
+        parts: [{
+          text: `
+            Based on the following GitHub repository analysis, generate a Cursor-compatible prompt for code generation or refactoring.
+
+            Repository: ${project.repoName}
+            Description: ${project.repoDescription || 'No description'}
+            Language: ${project.repoLanguage || 'Unknown'}
+            Inferred Tech Stack: ${inferredTechStack}
+            Key Files: ${keyFiles.join(', ')}
+
+            ${userPrompt ? `Custom Instructions: ${userPrompt}` : ''}
+
+            Generate a markdown-formatted Cursor prompt with:
+            - Clear objective
+            - Repo context (tech stack, key files, inferred functionality)
+            - Specific instructions for Cursor (file paths, example code)
+            - Desired functionality
+          `
+        }]
+      }]
+    });
+
+    const cursorPrompt = promptRes.candidates[0].content.parts[0].text.replace(/```markdown|```/g, '');
+
+    // Calculate tokens used
+    const totalTokens = promptRes.usageMetadata?.totalTokenCount || estimatedTokens;
+
+    // Save to database
+    await db.update(githubProject)
+      .set({ cursorPrompt, inferredTechStack })
+      .where(sql`${githubProject.id} = ${id} AND ${githubProject.userId} = ${userId}`);
 
     // Insert token usage
     await db.insert(tokenUsage).values({
       id: crypto.randomUUID(),
       userId,
       tokensUsed: totalTokens,
-      operation: 'idea_generation',
-      inputTokens,
-      outputTokens,
+      operation: 'github_cursor_prompt_generation',
+      inputTokens: 0,
+      outputTokens: totalTokens,
       totalTokens,
     });
 
@@ -118,15 +153,14 @@ export async function GET(req: NextRequest) {
       })
       .where(eq(userprofile.userId, userId));
 
-    // Update token rate limiting
+    // Update analytics
     tokensUsed += totalTokens;
     const finalTokensRateLimited = tokensUsed >= tokenLimit;
 
-    // Update user analytics with all
     await db.insert(userAnalytics).values({
       id: crypto.randomUUID(),
       userId,
-      route: '/api/ideas/generate',
+      route: '/api/github-projects/[id]/generate-cursor-prompt',
       method: 'GET',
       generationAttemptsCount: attempts,
       generationAttemptsResetTime: attemptsResetTime,
@@ -147,11 +181,7 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    if (tokensRateLimited) {
-      return NextResponse.json({ error: 'Token rate limit exceeded' }, { status: 429 });
-    }
-
-    return NextResponse.json({ ideas, usage });
+    return NextResponse.json({ cursorPrompt });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

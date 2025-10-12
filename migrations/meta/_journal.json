@@ -78,6 +78,34 @@
       "when": 1760181312933,
       "tag": "0010_moaning_living_tribunal",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1760251539513,
+      "tag": "0011_handy_penance",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1760253413921,
+      "tag": "0012_past_solo",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1760256293910,
+      "tag": "0013_mature_mongoose",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1760261176390,
+      "tag": "0014_round_gauntlet",
+      "breakpoints": true
     }
   ]
 }

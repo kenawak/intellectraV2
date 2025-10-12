@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import Image from "next/image"
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import {
@@ -98,8 +99,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
               <a href="#">
-                <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Acme Inc.</span>
+                <Image
+                  src="/intelectra.png"
+                  alt="Intellectra"
+                  width={48}
+                  height={48}
+                />
+                <span className="text-base font-semibold">Intellectra.</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -121,26 +127,35 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </Badge>
               </CardContent>
             </Card> */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xs text-muted-foreground">
-                  Remaining Attempts
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 bg-muted rounded-full h-2">
-                    <div
-                      className="bg-primary h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${(analytics.userAnalytics.remainingAttempts / 5) * 100}%` }}
-                    />
-                  </div>
-                  <Badge variant="outline" className="text-xs">
-                    {analytics.userAnalytics.remainingAttempts}/5
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
+        <Card className="p-2">
+  <CardHeader className="flex flex-col items-start">
+    <CardTitle className="text-sm font-medium text-muted-foreground">
+      Remaining Attempts
+    </CardTitle>
+  </CardHeader>
+  <CardContent>
+    <div className="flex items-center gap-3">
+      {/* Progress Bar */}
+      <div className="relative flex-1 h-3 bg-muted/60 rounded-full overflow-hidden">
+        <div
+          className="absolute left-0 top-0 h-full bg-gradient-to-r from-primary/90 to-primary rounded-full transition-all duration-500"
+          style={{
+            width: `${(analytics.userAnalytics.remainingAttempts / 5) * 100}%`,
+          }}
+        />
+      </div>
+
+      {/* Counter Badge */}
+      <div className="px-2 py-0.5 rounded-md border text-xs font-medium bg-background shadow-sm">
+        {analytics.userAnalytics.remainingAttempts}/5
+      </div>
+    </div>
+    <p className="mt-2 text-[11px] text-muted-foreground">
+      Each action reduces your remaining attempts.
+    </p>
+  </CardContent>
+</Card>
+
           </div>
         )}
       </SidebarContent>

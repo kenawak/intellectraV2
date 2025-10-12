@@ -2,13 +2,13 @@
 
 import * as React from "react"
 import {
-  IconChevronDown,
   IconChevronLeft,
   IconChevronRight,
   IconChevronsLeft,
   IconChevronsRight,
   IconDotsVertical,
   IconLayoutColumns,
+  IconChevronDown
 } from "@tabler/icons-react"
 import {
   ColumnDef,
@@ -32,15 +32,12 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer"
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -76,20 +73,33 @@ import {
 export const ideaSchema = z.object({
   id: z.string(),
   title: z.string(),
-  description: z.string(),
-  confidence: z.number(),
-  upvotes: z.number(),
+  summary: z.string(),
+  unmet_needs: z.array(z.string()),
+  product_idea: z.array(z.string()),
+  proof_of_concept: z.string(),
+  source_url: z.string(),
+  prompt_used: z.string(),
   createdAt: z.string(),
-  userId: z.string().optional(),
+  confidenceScore: z.number(),
+  suggestedPlatforms: z.array(z.string()),
+  generatedBy: z.string(),
+  votes: z.object({
+    up: z.number(),
+    down: z.number(),
+    total: z.number(),
+    userVote: z.union([z.literal('up'), z.literal('down'), z.null()]),
+  }),
 })
 
 // Columns defined inside component to access handleBookmark
 
-export function DataTable() {
+interface DataTableProps {
+  publicIdeas: z.infer<typeof ideaSchema>[]
+  upvotedIdeas: z.infer<typeof ideaSchema>[]
+}
+
+export function DataTable({ publicIdeas, upvotedIdeas }: DataTableProps) {
   const [activeTab, setActiveTab] = React.useState<"public" | "upvoted">("public")
-  const [publicIdeas, setPublicIdeas] = React.useState<z.infer<typeof ideaSchema>[]>([])
-  const [upvotedIdeas, setUpvotedIdeas] = React.useState<z.infer<typeof ideaSchema>[]>([])
-  const [loading, setLoading] = React.useState(true)
   const [rowSelection, setRowSelection] = React.useState({})
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -102,47 +112,8 @@ export function DataTable() {
   const data = activeTab === "public" ? publicIdeas : upvotedIdeas
 
   React.useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true)
-      setRowSelection({}) // Reset selection when tab changes
-      setPagination({ pageIndex: 0, pageSize: 10 }) // Reset pagination
-      try {
-        if (activeTab === "public") {
-          const response = await fetch('/api/ideas/public')
-          if (response.ok) {
-            const ideas = await response.json()
-            const filtered = ideas.filter((idea: any) => idea.confidenceScore > 85).map((idea: any) => ({
-              id: idea.id,
-              title: idea.title,
-              description: idea.summary,
-              confidence: idea.confidenceScore,
-              upvotes: idea.votes.up,
-              createdAt: idea.createdAt,
-            }))
-            setPublicIdeas(filtered)
-          }
-        } else {
-          const response = await fetch('/api/ideas/public')
-          if (response.ok) {
-            const ideas = await response.json()
-            const upvoted = ideas.filter((idea: any) => idea.votes.userVote === 'up').map((idea: any) => ({
-              id: idea.id,
-              title: idea.title,
-              description: idea.summary,
-              confidence: idea.confidenceScore,
-              upvotes: idea.votes.up,
-              createdAt: idea.createdAt,
-            }))
-            setUpvotedIdeas(upvoted)
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch ideas:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchData()
+    setRowSelection({}) // Reset selection when tab changes
+    setPagination({ pageIndex: 0, pageSize: 10 }) // Reset pagination
   }, [activeTab])
 
   const handleBookmark = async (ideaId: string) => {
@@ -154,8 +125,16 @@ export function DataTable() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: idea.title,
-          summary: idea.description,
-          source_url: '', // or something
+          summary: idea.summary,
+          unmet_needs: idea.unmet_needs,
+          product_idea: idea.product_idea,
+          proof_of_concept: idea.proof_of_concept,
+          source_url: idea.source_url,
+          prompt_used: idea.prompt_used,
+          confidenceScore: idea.confidenceScore,
+          suggestedPlatforms: idea.suggestedPlatforms,
+          createdAt: idea.createdAt,
+          generatedBy: idea.generatedBy,
         })
       })
       if (response.ok) {
@@ -205,29 +184,29 @@ export function DataTable() {
       enableHiding: false,
     },
     {
-      accessorKey: "description",
+      accessorKey: "summary",
       header: "Description",
       cell: ({ row }) => (
         <div className="max-w-64 truncate">
-          {row.original.description}
+          {row.original.summary}
         </div>
       ),
     },
     {
-      accessorKey: "confidence",
+      accessorKey: "confidenceScore",
       header: "Confidence",
       cell: ({ row }) => (
         <Badge variant="outline" className="text-muted-foreground px-1.5">
-          {row.original.confidence}%
+          {row.original.confidenceScore}%
         </Badge>
       ),
     },
     {
-      accessorKey: "upvotes",
+      accessorKey: "votes.up",
       header: "Upvotes",
       cell: ({ row }) => (
         <div className="text-center">
-          {row.original.upvotes}
+          {row.original.votes.up}
         </div>
       ),
     },
@@ -591,110 +570,87 @@ export function DataTable() {
 
 
 function TableCellViewer({ item }: { item: z.infer<typeof ideaSchema> }) {
-  const isMobile = useIsMobile()
-  const [fullIdea, setFullIdea] = React.useState<any>(null)
-  const [loading, setLoading] = React.useState(false)
-
-  const fetchFullIdea = async () => {
-    if (fullIdea) return
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/ideas/${item.id}`)
-      if (res.ok) {
-        const data = await res.json()
-        setFullIdea(data)
-      }
-    } catch (error) {
-      console.error('Failed to fetch full idea:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   return (
-    <Drawer direction={isMobile ? "bottom" : "right"}>
-      <DrawerTrigger asChild>
-        <Button variant="link" className="text-foreground w-fit px-0 text-left" onClick={fetchFullIdea}>
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button variant="link" className="text-foreground w-fit px-0 text-left">
           {item.title}
         </Button>
-      </DrawerTrigger>
-      <DrawerContent>
-        <DrawerHeader className="gap-1">
-          <DrawerTitle>{item.title}</DrawerTitle>
-          <DrawerDescription>
-            Idea details
-          </DrawerDescription>
-        </DrawerHeader>
-        <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm max-h-96">
-          {loading ? (
-            <div className="flex items-center justify-center py-4">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-              <span className="ml-2">Loading details...</span>
+      </SheetTrigger>
+      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>{item.title}</SheetTitle>
+        </SheetHeader>
+        <div className="space-y-4">
+          <div>
+            <h4 className="font-semibold">Summary</h4>
+            <p className="text-sm">{item.summary}</p>
+          </div>
+          {item.unmet_needs && item.unmet_needs.length > 0 && (
+            <div>
+              <h4 className="font-semibold">Unmet Needs</h4>
+              <ul className="text-sm list-disc list-inside">
+                {item.unmet_needs.map((need: string, index: number) => (
+                  <li key={index}>{need}</li>
+                ))}
+              </ul>
             </div>
-          ) : (
-            <>
-              <div className="grid gap-2">
-                <div className="font-medium">Description</div>
-                <div className="text-muted-foreground">
-                  {item.description}
-                </div>
-              </div>
-              <Separator />
-              <div className="grid gap-2">
-                <div className="flex gap-2 leading-none font-medium">
-                  Confidence: {item.confidence}%
-                </div>
-                <div className="flex gap-2 leading-none font-medium">
-                  Upvotes: {item.upvotes}
-                </div>
-                <div className="flex gap-2 leading-none font-medium">
-                  Created: {new Date(item.createdAt).toLocaleDateString()}
-                </div>
-              </div>
-              {fullIdea && (
-                <>
-                  <Separator />
-                  <div className="grid gap-2">
-                    <div className="font-medium">Unmet Needs</div>
-                    <ul className="list-disc list-inside text-muted-foreground">
-                      {fullIdea.unmet_needs?.length > 0 ? fullIdea.unmet_needs.map((need: string, index: number) => (
-                        <li key={index}>{need}</li>
-                      )) : <li>No unmet needs listed</li>}
-                    </ul>
-                  </div>
-                  <div className="grid gap-2">
-                    <div className="font-medium">Product Ideas</div>
-                    <ul className="list-disc list-inside text-muted-foreground">
-                      {fullIdea.product_idea?.length > 0 ? fullIdea.product_idea.map((idea: string, index: number) => (
-                        <li key={index}>{idea}</li>
-                      )) : <li>No product ideas listed</li>}
-                    </ul>
-                  </div>
-                  <div className="grid gap-2">
-                    <div className="font-medium">Proof of Concept</div>
-                    <div className="text-muted-foreground">
-                      {fullIdea.proof_of_concept || "No proof of concept provided"}
-                    </div>
-                  </div>
-                  <div className="grid gap-2">
-                    <div className="font-medium">Suggested Platforms</div>
-                    <ul className="list-disc list-inside text-muted-foreground">
-                      {fullIdea.suggestedPlatforms?.length > 0 ? fullIdea.suggestedPlatforms.map((platform: any, index: number) => (
-                        <li key={index}>{platform.name}{platform.link ? ` (${platform.link})` : ''}</li>
-                      )) : <li>No suggested platforms</li>}
-                    </ul>
-                  </div>
-                </>
-              )}
-            </>
           )}
+          {item.product_idea && item.product_idea.length > 0 && (
+            <div>
+              <h4 className="font-semibold">Product Ideas</h4>
+              <ul className="text-sm list-disc list-inside">
+                {item.product_idea.map((idea: string, index: number) => (
+                  <li key={index}>{idea}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {item.proof_of_concept && (
+            <div>
+              <h4 className="font-semibold">Proof of Concept</h4>
+              <p className="text-sm">{item.proof_of_concept}</p>
+            </div>
+          )}
+          {item.suggestedPlatforms && item.suggestedPlatforms.length > 0 && (
+            <div>
+              <h4 className="font-semibold">Suggested Platforms</h4>
+              <div className="flex flex-wrap gap-2">
+                {item.suggestedPlatforms.map((platform: string, index: number) => (
+                  <Badge key={index} variant="outline">{platform}</Badge>
+                ))}
+              </div>
+            </div>
+          )}
+          <div>
+            <h4 className="font-semibold">Confidence Score</h4>
+            <p className="text-sm">{item.confidenceScore}%</p>
+          </div>
+          <div>
+            <h4 className="font-semibold">Upvotes</h4>
+            <p className="text-sm">{item.votes.up}</p>
+          </div>
+          {item.generatedBy && (
+            <div>
+              <h4 className="font-semibold">Generated By</h4>
+              <p className="text-sm">{item.generatedBy}</p>
+            </div>
+          )}
+          {item.source_url && (
+            <div>
+              <h4 className="font-semibold">Source URL</h4>
+              <a href={item.source_url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
+                {item.source_url}
+              </a>
+            </div>
+          )}
+          <div>
+            <h4 className="font-semibold">Created</h4>
+            <p className="text-sm">{new Date(item.createdAt).toLocaleDateString()}</p>
+          </div>
         </div>
-        <DrawerFooter>
-          <DrawerClose asChild>
-            <Button variant="outline">Close</Button>
-          </DrawerClose>
-        </DrawerFooter>
-      </DrawerContent>
-    </Drawer>
+      </SheetContent>
+    </Sheet>
   )
 }
+

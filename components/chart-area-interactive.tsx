@@ -69,12 +69,14 @@ interface AnalyticsData {
   }
 }
 
-export function ChartAreaInteractive() {
+interface ChartAreaInteractiveProps {
+  analytics: AnalyticsData | null
+  tokenUsage: TokenUsage[]
+}
+
+export function ChartAreaInteractive({ analytics, tokenUsage }: ChartAreaInteractiveProps) {
   const isMobile = useIsMobile()
   const [timeRange, setTimeRange] = React.useState("90d")
-  const [chartData, setChartData] = React.useState<TokenUsage[]>([])
-  const [loading, setLoading] = React.useState(true)
-  const [analytics, setAnalytics] = React.useState<AnalyticsData | null>(null)
 
   React.useEffect(() => {
     if (isMobile) {
@@ -82,40 +84,7 @@ export function ChartAreaInteractive() {
     }
   }, [isMobile])
 
-  React.useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch analytics
-        const analyticsResponse = await fetch('/api/analytics')
-        if (analyticsResponse.ok) {
-          const analyticsData = await analyticsResponse.json()
-          setAnalytics(analyticsData)
-        }
-
-        // Fetch token usage
-        const tokenResponse = await fetch('/api/analytics/token-usage', {
-          credentials: 'include'
-        })
-        if (tokenResponse.ok) {
-          const data = await tokenResponse.json()
-          const tokenUsageData: TokenUsage[] = data.tokenUsage
-
-          // Sort by date
-          const processedData = tokenUsageData.sort((a, b) => a.date.localeCompare(b.date))
-
-          setChartData(processedData)
-        }
-      } catch (error) {
-        console.error('Failed to fetch data:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchData()
-  }, [])
-
-  const filteredData = chartData.filter((item) => {
+  const filteredData = tokenUsage.filter((item) => {
     const date = new Date(item.date)
     const referenceDate = new Date()
     let daysToSubtract = 90

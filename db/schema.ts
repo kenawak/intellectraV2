@@ -129,6 +129,7 @@ export const bookmarkedIdea = pgTable("bookmarked_idea", {
   design: text("design"),
   tasks: text("tasks"),
   codeStubs: jsonb("code_stubs"),
+  cursorPrompt: text("cursor_prompt"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -158,5 +159,22 @@ export const vote = pgTable("vote", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const githubProject = pgTable("github_project", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  repoUrl: text("repo_url").notNull(),
+  repoName: text("repo_name").notNull(),
+  repoDescription: text("repo_description"),
+  repoLanguage: text("repo_language"),
+  inferredTechStack: text("inferred_tech_stack"),
+  packageJson: jsonb("package_json"),
+  requirementsTxt: text("requirements_txt"),
+  keyFiles: jsonb("key_files"),
+  isAnalyzed: boolean("is_analyzed").default(false),
+  lastAnalyzedAt: timestamp("last_analyzed_at"),
+  cursorPrompt: text("cursor_prompt"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
 
-export const schema = {user, session, account, verification, userprofile, userAnalytics, idea, bookmarkedIdea, tokenUsage, vote};
+
+export const schema = {user, session, account, verification, userprofile, userAnalytics, idea, bookmarkedIdea, tokenUsage, vote, githubProject};

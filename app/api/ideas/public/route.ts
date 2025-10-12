@@ -75,7 +75,13 @@ export async function GET(req: NextRequest) {
         prompt_used: idea.promptUsed,
         createdAt: idea.createdAt.toISOString(),
         confidenceScore: idea.confidenceScore,
-        suggestedPlatforms: idea.suggestedPlatforms,
+        suggestedPlatforms: (() => {
+          try {
+            return JSON.parse(idea.suggestedPlatforms || '[]')
+          } catch {
+            return []
+          }
+        })(),
         generatedBy: 'System', // Since no userId in idea table
         votes: {
           up: upVotes,
