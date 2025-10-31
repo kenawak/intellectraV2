@@ -1,0 +1,55 @@
+Design a high-conversion, professional landing page for this project. The goal is to immediately establish trust, communicate innovation, and drive sign-ups via the main Call-to-Action (CTA)."
+
+Visual Style & Aesthetic (The Zanzibar DNA):
+
+"The design must strictly follow a Modern, High-Contrast Dark Mode Aesthetic.
+
+Background: Deep, near-black or very dark charcoal gray (avoiding pure #000000 for better contrast).
+
+Color Palette: Primary color should be the current theme used in globals.css used for accents, highlights, and interactive elements. Secondary colors should be subtle grays for supporting text.
+
+Typography: Use Massive, Bold, Geometric/Sans-serif typography for main headings to create a strong visual impact. Body text must be highly legible white or light gray.
+
+Visual Effects: Incorporate subtle, high-tech visual effects like soft glows/neon accents around key text or elements, and polished, glassmorphism or metallic textures on cards/buttons."
+
+Layout & Structure (The Key Feature):
+
+"The layout must be Dynamic Split-Screen or Centrally Divided.
+
+Hero Section: Implement a vertically split hero section. The left side features the main headline and CTA. The right side features a large, dynamic visual/3D model/animation representing our product or concept.
+
+Scroll Behavior: As the user scrolls, the split-screen sections should react with smooth, interactive transitions—ideally, the left and right panes move at different speeds (subtle parallax) or one side locks while the other scrolls (sticky scrolling)."
+
+Content Placement & Key Elements:
+
+"The page structure must include the following sections, arranged vertically after the hero, maintaining the dark theme and bold typography:"
+
+Hero Section:
+
+Headline (H1)
+
+Subtext: A brief, 2-line description.
+
+Primary CTA: [Insert CTA text, e.g., "Start Free Trial" or "Request Early Access"].
+
+Visual: A complex, abstract, or product-in-action visualization using the accent color.
+
+Feature Overview Section:
+
+Use a minimalist card layout (3 cards) with subtle inner shadows/borders.
+
+Each card must clearly state a key benefit: [Feature 1 Name], [Feature 2 Name], [Feature 3 Name].
+
+Social Proof/Trust Section:
+
+Display logos of [List 3-5 recognizable or aspirational client/partner names] in a muted monochrome style.
+
+Detailed Section (Optional):
+
+A section demonstrating a before/after comparison or a data visualization using the split-screen concept again, if possible.
+
+Final CTA/Footer:
+
+A final, centered, and unmissable CTA block that repeats the primary call-to-action.
+
+

@@ -111,10 +111,10 @@ export default function Home() {
         />
         <div className="relative z-10">
           <h1 className="text-5xl md:text-6xl font-bold mb-4 animate-fade-in">
-            Supercharge Your SaaS Ideas with AI
+            Supercharge Your SaaS Ideas<br />with AI
           </h1>
           <p className="text-xl mb-6 animate-fade-in-delay">
-            Turn your concepts into reality—generate groundbreaking ideas, craft precise specs, and build ready-to-launch code using advanced AI technology.
+            Turn your concepts into reality—<br />generate groundbreaking ideas, craft precise specs,<br />and build ready-to-launch code using advanced AI technology.
           </p>
           <Button
             asChild

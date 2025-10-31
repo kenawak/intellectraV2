@@ -2,11 +2,50 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { GoogleGenAI } from '@google/genai';
 import { db } from '@/db/drizzle';
-import { idea, bookmarkedIdea, tokenUsage, userprofile, userAnalytics } from '@/db/schema';
+import { bookmarkedIdea, tokenUsage, userprofile, userAnalytics } from '@/db/schema';
 import { eq, sql, desc, and } from 'drizzle-orm';
+import { Content } from '@google/genai/server';
 
+// --- Gemini Client Initialization ---
 const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const MODEL_NAME = 'gemini-2.5-flash';
 
+// --- Utility Functions for Robust API Calls (Retry Logic) ---
+
+// Helper function to wait for a given duration
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Executes a generateContent call with a retry mechanism for transient 503 errors.
+ * Uses a simple exponential backoff strategy (2s, 4s, 8s, etc.).
+ */
+async function generateContentWithRetry(contents: Content[], maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await gemini.models.generateContent({
+        model: MODEL_NAME,
+        contents: contents
+      });
+      // Success, return the response
+      return response;
+    } catch (err: any) {
+      // Check for a 503 error (ApiError status code 503)
+      if (err.status === 503 && attempt < maxRetries) {
+        const waitTime = attempt * 2000; // 2s, 4s, 6s...
+        console.warn(`Attempt ${attempt} failed with 503 UNAVAILABLE. Retrying in ${waitTime / 1000} seconds...`);
+        await delay(waitTime); 
+        continue; // Go to the next attempt
+      }
+      
+      // For all other errors (like 400, 401, or the last 503 attempt), re-throw
+      throw err;
+    }
+  }
+  // Should be unreachable if maxRetries > 0, but good for type safety
+  throw new Error('All retry attempts failed to generate content.');
+}
+
+// --- Next.js Route Handler ---
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth.api.getSession({
@@ -19,8 +58,27 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     const { id } = await params;
-    const techStack = req.nextUrl.searchParams.get('techStack') || 'Next.js, TypeScript, Tailwind CSS';
+    const techStackParam = req.nextUrl.searchParams.get('techStack') || 'Next.js, TypeScript, Tailwind CSS';
+    
+    // Parse tech stack - can be either JSON object or string
+    let techStackString = techStackParam;
+    try {
+      const techStackObj = JSON.parse(techStackParam);
+      // If it's a structured object, format it to string for the AI prompt
+      const parts = [
+        techStackObj.frontend,
+        techStackObj.backend,
+        techStackObj.database,
+        techStackObj.styling,
+      ].filter(Boolean);
+      techStackString = parts.join(', ') || techStackParam;
+    } catch {
+      // Not JSON, use as-is (backward compatible)
+      techStackString = techStackParam;
+    }
+    const techStack = techStackString;
 
+    // --- Rate Limiting Logic ---
     // Get current user analytics for rate limiting
     const userAnalytic = await db.select().from(userAnalytics).where(eq(userAnalytics.userId, userId)).limit(1);
     const now = new Date();
@@ -90,82 +148,79 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       });
     }
 
-    // Phase 1: Requirements
-    const requirementsRes = await gemini.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [{
-        role: 'user',
-        parts: [{
-          text: `
-            Given the idea: ${ideaData.title} - ${ideaData.summary}
-            Unmet Needs: ${ideaData.unmetNeeds.join(', ')}
-            Product Idea: ${ideaData.productIdea.join(', ')}
-            Generate a requirements document with 3-5 user stories and acceptance criteria in markdown.
-          `
-        }]
+    let totalTokens = 0;
+
+    // Phase 1: Requirements (using retry function)
+    const requirementsContents: Content[] = [{
+      role: 'user',
+      parts: [{
+        text: `
+          Given the idea: ${ideaData.title} - ${ideaData.summary}
+          Unmet Needs: ${ideaData.unmetNeeds.join(', ')}
+          Product Idea: ${ideaData.productIdea.join(', ')}
+          Generate a requirements document with 3-5 user stories and acceptance criteria in markdown.
+        `
       }]
-    });
+    }];
+    const requirementsRes = await generateContentWithRetry(requirementsContents);
     const requirements = requirementsRes.candidates[0].content.parts[0].text.replace(/```markdown|```/g, '');
+    totalTokens += requirementsRes.usageMetadata?.totalTokenCount || 0;
 
-    // Phase 2: Design
-    const designRes = await gemini.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [{
-        role: 'user',
-        parts: [{
-          text: `
-            Based on the requirements: ${requirements}
-            And tech stack: ${techStack}
-            Generate a high-level design document in markdown, including:
-            - Component breakdown
-            - API endpoints or functions
-            - Data models
-          `
-        }]
+    // Phase 2: Design (using retry function)
+    const designContents: Content[] = [{
+      role: 'user',
+      parts: [{
+        text: `
+          Based on the requirements: ${requirements}
+          And tech stack: ${techStack}
+          Generate a high-level design document in markdown, including:
+          - Component breakdown
+          - API endpoints or functions
+          - Data models
+        `
       }]
-    });
+    }];
+    const designRes = await generateContentWithRetry(designContents);
     const design = designRes.candidates[0].content.parts[0].text.replace(/```markdown|```/g, '');
+    totalTokens += designRes.usageMetadata?.totalTokenCount || 0;
 
-    // Phase 3: Tasks
-    const tasksRes = await gemini.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [{
-        role: 'user',
-        parts: [{
-          text: `
-            Given the design: ${design}
-            Generate a task list in markdown with:
-            - 5-10 actionable tasks
-            - Estimated effort (hours)
-            - File or module mappings
-          `
-        }]
+    // Phase 3: Tasks (using retry function)
+    const tasksContents: Content[] = [{
+      role: 'user',
+      parts: [{
+        text: `
+          Given the design: ${design}
+          Generate a task list in markdown with:
+          - 5-10 actionable tasks
+          - Estimated effort (hours)
+          - File or module mappings
+        `
       }]
-    });
+    }];
+    const tasksRes = await generateContentWithRetry(tasksContents);
     const tasks = tasksRes.candidates[0].content.parts[0].text.replace(/```markdown|```/g, '');
+    totalTokens += tasksRes.usageMetadata?.totalTokenCount || 0;
 
-    // Phase 4: Code Scaffolding
-    const codeRes = await gemini.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [{
-        role: 'user',
-        parts: [{
-          text: `
-            Based on tasks: ${tasks}
-            And tech stack: ${techStack}
-            Generate code stubs for key components (e.g., API routes, React components) as JSON:
-            { "files": [{ "path": "string", "content": "string" }] }
-          `
-        }]
+    // Phase 4: Code Scaffolding (using retry function)
+    const codeContents: Content[] = [{
+      role: 'user',
+      parts: [{
+        text: `
+          Based on tasks: ${tasks}
+          And tech stack: ${techStack}
+          Generate code stubs for key components (e.g., API routes, React components) as JSON:
+          { "files": [{ "path": "string", "content": "string" }] }
+        `
       }]
-    });
-    const codeStubs = JSON.parse(codeRes.candidates[0].content.parts[0].text.replace(/```json|```/g, ''));
+    }];
+    const codeRes = await generateContentWithRetry(codeContents);
+    
+    // The model might put code in a markdown block, so we clean it up before parsing.
+    const rawCodeText = codeRes.candidates[0].content.parts[0].text;
+    const cleanCodeText = rawCodeText.replace(/```json|```/g, '');
+    const codeStubs = JSON.parse(cleanCodeText);
 
-    // Calculate total tokens used
-    const totalTokens = (requirementsRes.usageMetadata?.totalTokenCount || 0) +
-                       (designRes.usageMetadata?.totalTokenCount || 0) +
-                       (tasksRes.usageMetadata?.totalTokenCount || 0) +
-                       (codeRes.usageMetadata?.totalTokenCount || 0);
+    totalTokens += codeRes.usageMetadata?.totalTokenCount || 0;
 
     // Save artifacts to database
     await db.update(bookmarkedIdea)
@@ -220,7 +275,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     return NextResponse.json({ requirements, design, tasks, codeStubs });
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Fatal error during spec generation:', err);
+    // Return a 500 status code for any unhandled error, including a final failed API retry
+    return NextResponse.json({ error: 'Internal server error or external AI service failed after retries.' }, { status: 500 });
   }
 }

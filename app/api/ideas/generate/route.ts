@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {auth} from '@/lib/auth'
 import { generateIdeas } from '@/lib/idea-generation';
+import { SearchProvider } from '@/lib/search-providers';
 import { db } from '@/db/drizzle';
 import { userAnalytics, tokenUsage, userprofile, idea } from '@/db/schema';
 import { eq, sql, desc } from 'drizzle-orm';
@@ -75,26 +76,19 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: errorMsg }, { status: 429 });
     }
 
-    const result = await generateIdeas(req.nextUrl.searchParams.get('prompt') || 'developer tool pain points');
+    // Get search parameters from query string
+    const prompt = req.nextUrl.searchParams.get('prompt') || 'developer side project ideas coding problems';
+    const providerParam = req.nextUrl.searchParams.get('provider') || 'exa';
+    const provider: SearchProvider = (['exa', 'tavily', 'serper'].includes(providerParam) ? providerParam : 'exa') as SearchProvider;
+    const sitesParam = req.nextUrl.searchParams.get('sites');
+    const sites = sitesParam ? sitesParam.split(',').filter(s => s.trim().length > 0) : undefined;
+    const numResults = parseInt(req.nextUrl.searchParams.get('numResults') || '5', 10);
+
+    const result = await generateIdeas(prompt, provider, sites, numResults);
     const { ideas, usage } = result;
 
-    // Save all generated ideas to public ideas table
-    const ideasToInsert = ideas.map((ideaData: any) => ({
-      id: crypto.randomUUID(),
-      title: ideaData.title,
-      summary: ideaData.summary,
-      unmetNeeds: ideaData.unmet_needs || [],
-      productIdea: ideaData.product_idea || [],
-      proofOfConcept: ideaData.proof_of_concept || "",
-      sourceUrl: ideaData.source_url || null,
-      promptUsed: req.nextUrl.searchParams.get('prompt') || 'developer tool pain points',
-      confidenceScore: ideaData.confidenceScore,
-      suggestedPlatforms: JSON.stringify(ideaData.suggestedPlatforms || []),
-      creationDate: new Date().toISOString().split('T')[0],
-      ideaSource: 'generated',
-    }));
-
-    await db.insert(idea).values(ideasToInsert);
+    // Note: generateIdeas() already inserts ideas into the database with conflict handling.
+    // The ideas are returned here for the API response. No need to insert again.
 
     const totalTokens = usage?.totalTokenCount || 0;
     const inputTokens = usage?.promptTokenCount || 0;

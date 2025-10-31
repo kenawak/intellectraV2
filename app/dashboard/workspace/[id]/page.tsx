@@ -8,7 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import Link from 'next/link';
-import { IconCopy } from '@tabler/icons-react';
+import { IconCopy, IconDownload } from '@tabler/icons-react';
+import { TechStackBuilder } from '@/components/tech-stack-builder';
+import { TechStackConfig } from '@/lib/tech-stack-generator';
 
 type Idea = {
   id: string;
@@ -32,25 +34,15 @@ type Artifacts = {
   codeStubs: { files: { path: string; content: string }[] };
 };
 
-const techStackOptions = [
-  'Next.js, TypeScript, Tailwind CSS',
-  'React, JavaScript, CSS',
-  'Vue.js, TypeScript, Vuetify',
-  'Angular, TypeScript, Angular Material',
-  'Express.js, Node.js, MongoDB',
-  'Django, Python, PostgreSQL',
-  'Flask, Python, SQLite',
-  'FastAPI, Python, PostgreSQL',
-  'Spring Boot, Java, MySQL',
-  'Ruby on Rails, Ruby, PostgreSQL',
-];
-
 const WorkspacePage = () => {
   const params = useParams();
   const id = params.id as string;
   const [idea, setIdea] = useState<Idea | null>(null);
   const [artifacts, setArtifacts] = useState<Artifacts | null>(null);
-  const [techStack, setTechStack] = useState(techStackOptions[0]);
+  const [techStack, setTechStack] = useState<TechStackConfig>({
+    frontend: 'Next.js',
+    styling: 'Tailwind CSS',
+  });
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +78,9 @@ const WorkspacePage = () => {
     setGenerating(true);
     setError(null);
     try {
-      const res = await fetch(`/api/ideas/${id}/generate-spec?techStack=${encodeURIComponent(techStack)}`);
+      // Convert tech stack config to JSON string
+      const techStackParam = JSON.stringify(techStack);
+      const res = await fetch(`/api/ideas/${id}/generate-spec?techStack=${encodeURIComponent(techStackParam)}`);
       if (res.status === 429) throw new Error('Rate limit exceeded. Please try again later.');
       if (!res.ok) throw new Error('Failed to generate spec');
       const data = await res.json();
@@ -98,10 +92,31 @@ const WorkspacePage = () => {
     }
   };
 
+  const downloadProject = async () => {
+    try {
+      const techStackParam = JSON.stringify(techStack);
+      const res = await fetch(`/api/ideas/${id}/download-project?techStack=${encodeURIComponent(techStackParam)}`);
+      if (!res.ok) throw new Error('Failed to download project');
+      
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${idea?.title.toLowerCase().replace(/\s+/g, '-') || 'project'}-starter.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
   const topics = [
     { id: 'requirements', label: 'Requirements & User Stories' },
     { id: 'design', label: 'Architecture & Design' },
     { id: 'tasks', label: 'Implementation Tasks' },
+    { id: 'code-stubs', label: 'Code Stubs' },
   ];
 
   const copyToClipboard = async (text: string) => {
@@ -206,26 +221,30 @@ const WorkspacePage = () => {
         </Card>
 
         {/* Tech Stack Selector and Generate Button */}
-        <div className="mb-6 flex gap-4 items-end">
-          <div className="flex-1">
-            <label className="block text-sm font-medium mb-2">Tech Stack</label>
-            <Select value={techStack} onValueChange={setTechStack}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {techStackOptions.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <Button onClick={generateSpecs} disabled={generating}>
-            {generating ? 'Generating...' : artifacts ? 'Regenerate Specs' : 'Generate Specs'}
-          </Button>
-        </div>
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <TechStackBuilder
+              value={techStack}
+              onChange={setTechStack}
+            />
+            <div className="flex gap-4 mt-4">
+              <Button onClick={generateSpecs} disabled={generating} className="flex-1">
+                {generating ? 'Generating...' : artifacts ? 'Regenerate Specs' : 'Generate Specs'}
+              </Button>
+              {artifacts && (
+                <Button
+                  onClick={downloadProject}
+                  variant="outline"
+                  disabled={generating}
+                  className="flex items-center gap-2"
+                >
+                  <IconDownload className="h-4 w-4" />
+                  Download Project ZIP
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
 
         {error && (
@@ -300,6 +319,64 @@ const WorkspacePage = () => {
                   </ScrollArea>
                 </CardContent>
               </Card>
+
+              {/* Code Stubs Section */}
+              {artifacts.codeStubs && artifacts.codeStubs.files && artifacts.codeStubs.files.length > 0 && (
+                <Card className="w-full max-w-2xl">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle id="code-stubs" className="text-lg font-semibold">Code Stubs</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Generated starter code files. Download individual files or get the full project ZIP above.
+                      </p>
+                      <div className="space-y-2 max-h-80 overflow-y-auto">
+                        {artifacts.codeStubs.files.map((file, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between p-3 border rounded-md hover:bg-muted/50 transition-colors"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-mono font-medium truncate">{file.path}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {file.content.length} characters
+                              </p>
+                            </div>
+                            <div className="flex gap-2 ml-4">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  const blob = new Blob([file.content], { type: 'text/plain' });
+                                  const url = URL.createObjectURL(blob);
+                                  const a = document.createElement('a');
+                                  a.href = url;
+                                  a.download = file.path.split('/').pop() || 'file';
+                                  a.click();
+                                  URL.revokeObjectURL(url);
+                                }}
+                                className="h-8"
+                              >
+                                <IconDownload className="h-4 w-4 mr-1" />
+                                Download
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyToClipboard(file.content)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <IconCopy className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               <Link href="/dashboard/projects" className="inline-block text-blue-500 underline">
                 Back to Projects

@@ -31,7 +31,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-import { IconMicrophone, IconPaperclip, IconRotate, IconBookmark, IconBookmarkFilled } from '@tabler/icons-react';
+import { IconMicrophone, IconPaperclip, IconRotate, IconBookmark, IconBookmarkFilled, IconSettings } from '@tabler/icons-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { nanoid } from 'nanoid';
 import { type FormEventHandler, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -55,6 +60,7 @@ type Idea = {
   product_idea: string[];
   proof_of_concept: string;
   source_url: string;
+  source_site?: string;
   confidenceScore: number;
   suggestedPlatforms: Array<{ name: string; link: string }>;
   creationDate: string;
@@ -62,7 +68,7 @@ type Idea = {
 };
 
 // Helper function to format an idea as JSX content
-const formatIdeaAsJSX = (idea: Idea): JSX.Element => (
+const formatIdeaAsJSX = (idea: Idea): React.ReactElement => (
   <div className="space-y-2">
     <h3 className="font-semibold">{idea.title}</h3>
     <p><strong>Summary:</strong> {idea.summary}</p>
@@ -96,6 +102,27 @@ const models = [
   { id: 'llama-3.1-70b', name: 'Llama 3.1 70B' },
 ];
 
+// Predefined popular sites for developers
+const popularSites = [
+  { id: 'reddit.com', name: 'Reddit', category: 'Forums' },
+  { id: 'x.com', name: 'X (Twitter)', category: 'Social' },
+  { id: 'indiehackers.com', name: 'Indie Hackers', category: 'Community' },
+  { id: 'dev.to', name: 'Dev.to', category: 'Blog' },
+  { id: 'news.ycombinator.com', name: 'Hacker News', category: 'News' },
+  { id: 'stackoverflow.com', name: 'Stack Overflow', category: 'Q&A' },
+  { id: 'github.com', name: 'GitHub', category: 'Code' },
+  { id: 'medium.com', name: 'Medium', category: 'Blog' },
+  { id: 'hashnode.com', name: 'Hashnode', category: 'Blog' },
+  { id: 'producthunt.com', name: 'Product Hunt', category: 'Products' },
+];
+
+const searchProviders = [
+  { id: 'exa', name: 'Exa Search', description: 'AI-powered semantic search' },
+  // Future providers can be added here when implemented
+  // { id: 'tavily', name: 'Tavily', description: 'Research API' },
+  // { id: 'serper', name: 'Serper', description: 'Google Search API' },
+];
+
 const Example = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -117,6 +144,12 @@ const Example = () => {
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [isGeneratingIdeas, setIsGeneratingIdeas] = useState(false);
   const [lastUserQuery, setLastUserQuery] = useState<string>('');
+  
+  // Search settings state
+  const [selectedSites, setSelectedSites] = useState<Set<string>>(new Set(['reddit.com', 'x.com', 'indiehackers.com']));
+  const [searchProvider, setSearchProvider] = useState<string>('exa');
+  const [numResults, setNumResults] = useState<number>(5);
+  const [customSite, setCustomSite] = useState<string>('');
 
   // Simulate streaming effect for assistant messages
   const simulateTyping = useCallback((messageId: string, content: string | React.JSX.Element, reasoning?: string, sources?: Array<{ title: string; url: string }>) => {
@@ -174,7 +207,20 @@ const Example = () => {
         if (!isRetry) {
           setLastUserQuery(query);
         }
-        const response = await fetch(`/api/ideas/generate?prompt=${encodeURIComponent(query)}`);
+        
+        // Build query parameters
+        const params = new URLSearchParams({
+          prompt: query,
+          provider: searchProvider,
+          numResults: numResults.toString(),
+        });
+        
+        // Add sites if any are selected
+        if (selectedSites.size > 0) {
+          params.append('sites', Array.from(selectedSites).join(','));
+        }
+        
+        const response = await fetch(`/api/ideas/generate?${params.toString()}`);
         const data = await response.json();
 
         if (response.status === 429) {
@@ -238,10 +284,11 @@ const Example = () => {
         setIsGeneratingIdeas(false);
       }
     },
-    [simulateTyping]
+    [simulateTyping, searchProvider, selectedSites, numResults]
   );
 
   const handleBookmark = async (idea: Idea) => {
+    if (!idea.id) return;
     try {
       const response = await fetch('/api/ideas/bookmark', {
         method: 'POST',
@@ -249,7 +296,7 @@ const Example = () => {
         body: JSON.stringify(idea),
       });
       if (response.ok) {
-        setBookmarkedIds(prev => new Set(prev).add(idea.id));
+        setBookmarkedIds(prev => new Set(prev).add(idea.id!));
       }
     } catch (error) {
       console.error('Failed to bookmark:', error);
@@ -291,7 +338,7 @@ const Example = () => {
     setMessages([
       {
         id: nanoid(),
-        content: "Hello! I'm your AI assistant. I can help you generate SaaS or side project ideas based on developer pain points. Enter a query like 'developer tool pain points' or ask about specific development topics!",
+        content: "Hello! I'm your AI assistant. I help developers discover cool side project ideas based on real coding problems and technical pain points. Enter a query like 'developer side project ideas' or 'coding workflow problems' to find buildable projects!",
         role: 'assistant',
         timestamp: new Date(),
         sources: [
@@ -321,10 +368,186 @@ const Example = () => {
             {models.find((m) => m.id === selectedModel)?.name}
           </span>
         </div>
-        <Button variant="ghost" size="sm" onClick={handleReset} className="h-8 px-2">
-          <IconRotate className="size-4" />
-          <span className="ml-1">Reset</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 px-2">
+                <IconSettings className="size-4" />
+                <span className="ml-1">Search Settings</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Search Settings</DialogTitle>
+                <DialogDescription>
+                  Configure which sites to search and choose your search provider
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-6 py-4">
+                {/* Search Provider Selection */}
+                <div className="space-y-2">
+                  <Label>Search Provider</Label>
+                  <Select value={searchProvider} onValueChange={setSearchProvider}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {searchProviders.map((provider) => (
+                        <SelectItem key={provider.id} value={provider.id}>
+                          <div>
+                            <div className="font-medium">{provider.name}</div>
+                            <div className="text-xs text-muted-foreground">{provider.description}</div>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Number of Results */}
+                <div className="space-y-2">
+                  <Label>Number of Results</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={numResults}
+                    onChange={(e) => setNumResults(Math.min(20, Math.max(1, parseInt(e.target.value) || 5)))}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Choose how many search results to analyze (1-20)
+                  </p>
+                </div>
+
+                {/* Site Selection */}
+                <div className="space-y-2">
+                  <Label>Sites to Search</Label>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto p-2 border rounded-md">
+                      {popularSites.map((site) => (
+                        <div key={site.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={site.id}
+                            checked={selectedSites.has(site.id)}
+                            onCheckedChange={(checked) => {
+                              setSelectedSites((prev) => {
+                                const newSet = new Set(prev);
+                                if (checked) {
+                                  newSet.add(site.id);
+                                } else {
+                                  newSet.delete(site.id);
+                                }
+                                return newSet;
+                              });
+                            }}
+                          />
+                          <Label
+                            htmlFor={site.id}
+                            className="text-sm font-normal cursor-pointer flex-1"
+                          >
+                            <div>{site.name}</div>
+                            <div className="text-xs text-muted-foreground">{site.id}</div>
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Custom Site Input */}
+                    <div className="space-y-2">
+                      <Label>Add Custom Site</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="e.g., example.com"
+                          value={customSite}
+                          onChange={(e) => setCustomSite(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && customSite.trim()) {
+                              const site = customSite.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
+                              if (site && !selectedSites.has(site)) {
+                                setSelectedSites((prev) => new Set(prev).add(site));
+                                setCustomSite('');
+                              }
+                            }
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            if (customSite.trim()) {
+                              const site = customSite.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
+                              if (site && !selectedSites.has(site)) {
+                                setSelectedSites((prev) => new Set(prev).add(site));
+                                setCustomSite('');
+                              }
+                            }
+                          }}
+                        >
+                          Add
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Enter a domain name (without http://) and press Enter or click Add
+                      </p>
+                    </div>
+
+                    {/* Selected Sites Summary */}
+                    {selectedSites.size > 0 && (
+                      <div className="space-y-2">
+                        <Label>Selected Sites ({selectedSites.size})</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {Array.from(selectedSites).map((site) => (
+                            <Badge
+                              key={site}
+                              variant="secondary"
+                              className="flex items-center gap-1"
+                            >
+                              {popularSites.find((s) => s.id === site)?.name || site}
+                              <button
+                                onClick={() => {
+                                  setSelectedSites((prev) => {
+                                    const newSet = new Set(prev);
+                                    newSet.delete(site);
+                                    return newSet;
+                                  });
+                                }}
+                                className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
+                              >
+                                ×
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Option to search all sites */}
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="search-all"
+                        checked={selectedSites.size === 0}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedSites(new Set());
+                          } else {
+                            setSelectedSites(new Set(['reddit.com', 'x.com', 'indiehackers.com']));
+                          }
+                        }}
+                      />
+                      <Label htmlFor="search-all" className="text-sm font-normal cursor-pointer">
+                        Search all sites (leave site selection empty to search everywhere)
+                      </Label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+          <Button variant="ghost" size="sm" onClick={handleReset} className="h-8 px-2">
+            <IconRotate className="size-4" />
+            <span className="ml-1">Reset</span>
+          </Button>
+        </div>
       </div>
 
       {/* Conversation Area */}
@@ -404,16 +627,33 @@ const Example = () => {
               <Card key={idea.id || nanoid()} className="relative hover:shadow-lg transition-shadow">
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg line-clamp-2">{idea.title}</CardTitle>
+                    <div className="flex-1">
+                      <CardTitle className="text-lg line-clamp-2">{idea.title}</CardTitle>
+                      {/* Source Site Badge */}
+                      {idea.source_site && (
+                        <div className="mt-2">
+                          <Badge variant="outline" className="text-xs">
+                            📍 Found on: {idea.source_site}
+                          </Badge>
+                        </div>
+                      )}
+                      {!idea.source_site && idea.source_url && (
+                        <div className="mt-2">
+                          <Badge variant="outline" className="text-xs">
+                            📍 {idea.ideaSource || 'Unknown source'}
+                          </Badge>
+                        </div>
+                      )}
+                    </div>
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary">{idea.confidenceScore}%</Badge>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleBookmark(idea)}
-                        disabled={bookmarkedIds.has(idea.id)}
+                        disabled={!idea.id || (idea.id ? bookmarkedIds.has(idea.id) : false)}
                       >
-                        {bookmarkedIds.has(idea.id) ? (
+                        {idea.id && bookmarkedIds.has(idea.id) ? (
                           <IconBookmarkFilled className="h-4 w-4" />
                         ) : (
                           <IconBookmark className="h-4 w-4" />
@@ -542,7 +782,7 @@ const Example = () => {
           <PromptInputTextarea
             value={inputValue}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInputValue(e.target.value)}
-            placeholder="Enter a query like 'developer tool pain points' or ask about specific development topics..."
+            placeholder="Search for side project ideas... (e.g., 'developer CLI tools', 'coding workflow problems', 'unique web app ideas')"
             disabled={isTyping}
           />
           <PromptInputToolbar>
