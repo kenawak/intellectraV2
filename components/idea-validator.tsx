@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { SaveValidatedIdeaButton } from '@/components/SaveValidatedIdeaButton';
 
 interface IdeaValidationResult {
   quickSummary: {
@@ -155,6 +156,35 @@ export function IdeaValidator() {
   const [isGeneratingIdeas, setIsGeneratingIdeas] = useState(false);
   const [generatedIdeas, setGeneratedIdeas] = useState<Array<{ id: string; title: string; summary: string }>>([]);
   const [selectedIdea, setSelectedIdea] = useState<{ id: string; title: string; summary: string } | null>(null);
+  const [userProfile, setUserProfile] = useState<{
+    plan: string | null;
+    paid: boolean | null;
+  } | null>(null);
+
+  // Fetch user profile on mount
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const response = await fetch('/api/user/profile', {
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setUserProfile({
+            plan: data.plan || null,
+            paid: data.paid ?? null,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
+
+  const isPro = userProfile?.plan === 'pro' || userProfile?.plan === 'enterprise' || userProfile?.paid === true;
 
   const scores = useMemo(() => {
     if (!validation) return null;
@@ -931,6 +961,26 @@ export function IdeaValidator() {
                 )}
               </TabsContent>
             </Tabs>
+
+            {/* Save Button */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-1">Ready to Build?</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Save this validated idea to your workspace and get a complete starter prompt
+                    </p>
+                  </div>
+                  <SaveValidatedIdeaButton
+                    ideaName={idea}
+                    validation={validation}
+                    validationScore={scores.overall}
+                    isPro={isPro}
+                  />
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
 

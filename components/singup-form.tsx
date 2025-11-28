@@ -29,6 +29,7 @@ import { useEffect, useState } from "react"
 import {Loader2} from "lucide-react"
 import { authClient } from "@/lib/auth-client"
 import Link from "next/link"
+import { usePostHog } from "@posthog/react"
 
 const formSchema = z.object({
   name: z.string().min(3),
@@ -42,12 +43,34 @@ export function SignUpForm({
   const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
+  const posthog = usePostHog();
 
   const signInWithGoogle = async () => {
+    // Track button click
+    posthog?.capture('Button Clicked', {
+      button_text: 'SignUp with Google',
+      section: 'signup',
+    });
+    
     const data = await authClient.signIn.social({
       provider: "google",
       callbackURL: "/dashboard"
     });
+    
+    // Identify user and track sign up
+    if (data?.user) {
+      posthog?.identify(data.user.id, {
+        email: data.user.email,
+        name: data.user.name,
+        role: (data.user as { role?: string })?.role || 'user',
+      });
+      
+      posthog?.capture('User Signed Up', {
+        role: (data.user as { role?: string })?.role || 'user',
+        plan: 'free',
+        method: 'google',
+      });
+    }
   };
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -61,9 +84,33 @@ export function SignUpForm({
   // 2. Define a submit handler.
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true)
+    
+    // Track button click
+    posthog?.capture('Button Clicked', {
+      button_text: 'Sign Up',
+      section: 'signup',
+    });
+    
     const {success, message} = await signUp(values.name, values.email, values.password)
     if(success){
       toast.success(message as string);
+      
+      // Identify user and track sign up
+      const { data: session } = await authClient.getSession();
+      if (session?.user) {
+        posthog?.identify(session.user.id, {
+          email: session.user.email,
+          name: session.user.name,
+          role: (session.user as { role?: string })?.role || 'user',
+        });
+        
+        posthog?.capture('User Signed Up', {
+          role: (session.user as { role?: string })?.role || 'user',
+          plan: 'free',
+          method: 'email',
+        });
+      }
+      
       router.push("dashboard")
     }
     else{

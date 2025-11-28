@@ -5,6 +5,7 @@ import { PlanAcquisitionGuard } from "@/components/plan-acquisition-guard"
 import { OnboardingGuard } from "@/components/onboarding-guard"
 import { PlanReminder } from "@/components/plan-reminder"
 import { OnboardingReminder } from "@/components/onboarding-reminder"
+import { PostHogPageview } from "@/components/PostHogPageview"
 import {
   SidebarInset,
   SidebarProvider,
@@ -39,6 +40,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <SidebarInset>
               <SiteHeader />
               <div className="flex flex-1 flex-col">
+                <PostHogPageview />
                 <div className="@container/main flex flex-1 flex-col gap-2">
                   <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
                     <PlanReminder />

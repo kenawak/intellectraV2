@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { authClient } from '@/lib/auth-client';
 import { toast } from 'sonner';
 import { AuthGuard } from '@/components/auth-guard';
+import { usePostHog } from '@posthog/react';
 
 const features = [
   {
@@ -105,6 +106,7 @@ export default function PricingPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const { data: session } = authClient.useSession();
+  const posthog = usePostHog();
   const currentPlan = (session?.user as { subscriptionStatus?: string })?.subscriptionStatus || 'free';
 
   const handleCheckout = async (productId?: string, slug?: string) => {
@@ -117,6 +119,19 @@ export default function PricingPage() {
       console.log('productId', productId);
       console.log('slug', slug);
       setIsLoading(slug || 'checkout');
+      
+      // Track payment started event
+      posthog?.capture('Payment Started', {
+        plan: slug || 'unknown',
+        product_id: productId,
+        amount: slug === 'pro' ? 19 : slug === 'enterprise' ? 0 : 0, // Update with actual amounts
+      });
+      
+      // Track button click
+      posthog?.capture('Button Clicked', {
+        button_text: slug === 'pro' ? 'Start 7-Day Trial' : 'Contact Sales',
+        section: 'pricing',
+      });
       
       if (authClient.checkout) {
         await authClient.checkout({
@@ -136,6 +151,13 @@ export default function PricingPage() {
   const handleFreePlan = async () => {
     try {
       setIsLoading('free');
+      
+      // Track button click
+      posthog?.capture('Button Clicked', {
+        button_text: 'Get Started Free',
+        section: 'pricing',
+      });
+      
       const response = await fetch('/api/user/init-free-profile', {
         method: 'POST',
         credentials: 'include',
@@ -144,6 +166,12 @@ export default function PricingPage() {
       if (!response.ok) {
         throw new Error('Failed to initialize free profile');
       }
+
+      // Track feature used
+      posthog?.capture('Feature Used', {
+        feature_name: 'Free Plan Activated',
+        user_id: session?.user?.id,
+      });
 
       toast.success('Free plan activated!');
       // Redirect to onboarding after free plan activation
@@ -160,6 +188,12 @@ export default function PricingPage() {
   };
 
   const handleEnterpriseContact = () => {
+    // Track button click
+    posthog?.capture('Button Clicked', {
+      button_text: 'Contact Sales',
+      section: 'pricing',
+    });
+    
     window.location.href = 'mailto:sales@intellectra.com';
   };
 

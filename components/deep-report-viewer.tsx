@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { authClient } from '@/lib/auth-client';
 import { cn } from '@/lib/utils';
 import { ProductIdea } from '@/lib/unified-search-service';
+import { SaveOpportunityButton } from '@/components/SaveOpportunityButton';
 
 /**
  * DeepReportViewer Component
@@ -313,6 +314,18 @@ export function DeepReportViewer() {
                         </div>
                       </div>
 
+                      {idea.market_proof && (
+                        <div>
+                          <div className="flex items-start gap-2 mb-1">
+                            <TrendingUp className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                            <div>
+                              <p className="text-sm font-semibold text-foreground mb-1">Market Proof</p>
+                              <p className="text-sm text-muted-foreground">{idea.market_proof}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {idea.core_features && idea.core_features.length > 0 && (
                         <div>
                           <p className="text-sm font-semibold text-foreground mb-2">Core Features</p>
@@ -326,6 +339,14 @@ export function DeepReportViewer() {
                           </ul>
                         </div>
                       )}
+
+                      <div className="pt-4 border-t">
+                        <SaveOpportunityButton
+                          opportunity={idea}
+                          topic={query}
+                          isPro={hasFullAccess}
+                        />
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
@@ -359,6 +380,12 @@ export function DeepReportViewer() {
                         <p className="text-sm font-semibold text-foreground mb-1">Monetization</p>
                         <p className="text-sm text-muted-foreground">{getTeaserIdea()!.monetization_strategy}</p>
                       </div>
+                      {getTeaserIdea()!.market_proof && (
+                        <div>
+                          <p className="text-sm font-semibold text-foreground mb-1">Market Proof</p>
+                          <p className="text-sm text-muted-foreground">{getTeaserIdea()!.market_proof}</p>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 )}

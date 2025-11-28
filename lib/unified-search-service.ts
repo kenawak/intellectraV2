@@ -350,7 +350,8 @@ export interface ProductIdea {
   title: string;
   niche: string;
   pain_point: string;
-  monetization_strategy: string;
+  monetization_strategy: string; // Can contain 2 options separated by " + " or " OR "
+  market_proof?: string; // 1-sentence market validation
   viability_score: number;
   core_features: string[];
 }
@@ -368,9 +369,13 @@ You analyze market data and search results to identify highly viable, product-ce
 1. IGNORE implementation details: Do NOT mention specific frameworks, databases, programming languages, or technical stack choices
 2. FOCUS on product features, user pain points, and monetization strategies
 3. EXTRACT evidence of high revenue signals or strong trend indicators from the search snippets
-4. IDENTIFY distinct product opportunities (3-5 unique ideas)
+4. IDENTIFY distinct product opportunities (4-6 unique ideas spanning 3+ different sub-sectors)
 5. CALCULATE viability scores (1-10) based on revenue signals and competitive landscape
 6. ENSURE each product idea is ready for immediate card-based display
+7. DIVERSITY: Generate ideas across multiple sub-sectors (e.g., for "ai trends": DevOps, Sales, Consumer, Healthcare, etc.)
+8. VALIDATION: Include 1-sentence market proof with concrete numbers (e.g., "$15B agentic AI market by 2027")
+9. QUANTIFY: Pain points MUST include specific metrics (e.g., "40% build failures in cross-platform teams")
+10. MONETIZATION: Provide 2 realistic monetization options per idea (e.g., "Usage-based $0.10/build-min + $99/mo base" OR "Per-seat $29/user/month + $500 setup fee")
 
 **Output Format:**
 You MUST output ONLY a valid JSON array. No narrative text, no markdown, no explanations. Just the JSON array.`;
@@ -421,19 +426,27 @@ ${snippets}
 Extract evidence of high revenue signals, strong trend indicators, and viable product opportunities from the search snippets above.
 
 **Output Requirements:**
-You MUST output ONLY a valid JSON array containing 3-5 distinct product ideas. Each idea must be a JSON object with the following exact structure:
+You MUST output ONLY a valid JSON array containing 4-6 distinct product ideas spanning 3+ different sub-sectors. Each idea must be a JSON object with the following exact structure:
 
 {
-  "title": "Concise, catchy product name/concept (e.g., 'AI-Powered Study Flashcard App')",
-  "niche": "The specific micro-niche user (e.g., 'Veterinary Students' or 'Remote Fullstack Teams')",
-  "pain_point": "The single, high-value problem the product solves (e.g., 'Tedious manual note summarization.')",
-  "monetization_strategy": "The clearest path to $100+ MRR (e.g., 'Freemium with Pro subscription for advanced AI features.')",
+  "title": "Concise, catchy product name/concept (e.g., 'Agentic CI/CD Optimization & Self-Healing Bot')",
+  "niche": "The specific micro-niche user (e.g., 'DevOps and CI/CD Managers in Cross-Platform Enterprises')",
+  "pain_point": "The single, high-value problem with QUANTIFIED METRICS (e.g., '40% of build pipeline failures require manual intervention across diverse target environments, costing teams 15+ hours/week.')",
+  "monetization_strategy": "TWO realistic monetization options separated by ' OR ' (e.g., 'Usage-based subscription at $0.10/build-minute + $99/mo base OR Per-seat $49/user/month with volume discounts')",
+  "market_proof": "One sentence with concrete market validation numbers (e.g., 'Agentic AI market projected to reach $15B by 2027 with 45% CAGR.')",
   "viability_score": 8,
   "core_features": [
     "Feature 1 that solves the pain point.",
     "Feature 2 that drives daily retention/habit loop."
   ]
 }
+
+**CRITICAL REQUIREMENTS:**
+- Generate 4-6 ideas (not 3-5)
+- Span at least 3 different sub-sectors (e.g., DevOps, Sales, Consumer, Healthcare, Finance, etc.)
+- Every pain_point MUST include specific metrics/percentages/numbers
+- Every monetization_strategy MUST include 2 options separated by " OR "
+- Every idea MUST include market_proof with concrete numbers (market size, growth rate, etc.)
 
 **Viability Score Calculation (1-10):**
 - 8-10: Strong revenue signals, low competition, clear monetization path
@@ -490,6 +503,7 @@ function parseJsonResponse(text: string): ProductIdea[] {
         niche: String(item.niche),
         pain_point: String(item.pain_point),
         monetization_strategy: String(item.monetization_strategy),
+        market_proof: item.market_proof ? String(item.market_proof) : undefined,
         viability_score: typeof item.viability_score === 'number' 
           ? Math.max(1, Math.min(10, Math.round(item.viability_score))) 
           : 5,
@@ -578,13 +592,13 @@ export async function generateReport(
       // Parse and validate JSON response
       const productIdeas = parseJsonResponse(responseText);
       
-      // Ensure we have 3-5 ideas
-      if (productIdeas.length < 3) {
-        throw new Error(`Only ${productIdeas.length} product ideas generated, need at least 3`);
+      // Ensure we have 4-6 ideas
+      if (productIdeas.length < 4) {
+        throw new Error(`Only ${productIdeas.length} product ideas generated, need at least 4`);
       }
       
-      // Limit to 5 ideas
-      const limitedIdeas = productIdeas.slice(0, 5);
+      // Limit to 6 ideas
+      const limitedIdeas = productIdeas.slice(0, 6);
       
       // Convert back to JSON string for storage
       const jsonString = JSON.stringify(limitedIdeas, null, 2);

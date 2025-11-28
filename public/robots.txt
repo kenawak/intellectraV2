@@ -1,0 +1,39 @@
+User-agent: *
+Allow: /
+
+# AI Crawlers - Allow all
+User-agent: GPTBot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Google-Extended
+Allow: /
+Crawl-delay: 1
+
+User-agent: PerplexityBot
+Allow: /
+Crawl-delay: 1
+
+User-agent: ClaudeBot
+Allow: /
+Crawl-delay: 1
+
+User-agent: anthropic-ai
+Allow: /
+Crawl-delay: 1
+
+User-agent: CCBot
+Allow: /
+Crawl-delay: 1
+
+User-agent: ChatGPT-User
+Allow: /
+Crawl-delay: 1
+
+User-agent: BingBot
+Allow: /
+Crawl-delay: 1
+
+# Sitemap
+Sitemap: https://intellectra.kenawak.works/sitemap.xml
+

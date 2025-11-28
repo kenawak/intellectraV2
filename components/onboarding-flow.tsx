@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ArrowLeft, Check, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import marketData from '@/market.json';
+import { usePostHog } from '@posthog/react';
+import { authClient } from '@/lib/auth-client';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type MarketTree = Record<string, any>;
@@ -24,6 +26,8 @@ interface OnboardingFlowProps {
  */
 export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const router = useRouter();
+  const posthog = usePostHog();
+  const { data: session } = authClient.useSession();
   const [currentPath, setCurrentPath] = useState<string[]>([]);
   const [selectedLeaf, setSelectedLeaf] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -103,6 +107,13 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         const error = await response.json();
         throw new Error(error.error || 'Failed to save onboarding data');
       }
+
+      // Track onboarding completion
+      posthog?.capture('Feature Used', {
+        feature_name: 'Onboarding Completed',
+        user_id: session?.user?.id,
+        market_specialization: cleanSpecialization,
+      });
 
       toast.success('Onboarding completed! Welcome to Intellectra.');
       

@@ -220,5 +220,43 @@ export const report = pgTable("report", {
     .notNull(),
 });
 
+export const workspaceOpportunity = pgTable("workspace_opportunities", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  topic: text("topic").notNull(),
+  opportunityName: text("opportunity_name").notNull(),
+  persona: text("persona").notNull(),
+  score: integer("score").notNull(),
+  painPoint: text("pain_point").notNull(),
+  monetization: text("monetization").notNull(),
+  coreFeatures: text("core_features").array().default([]),
+  marketProof: text("market_proof"),
+  starterPrompt: text("starter_prompt").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
 
-export const schema = {user, session, account, verification, userprofile, userAnalytics, featureAnalytics, idea, bookmarkedIdea, tokenUsage, vote, githubProject, report};
+export const workspaceIdea = pgTable("workspace_ideas", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  ideaName: text("idea_name").notNull(),
+  validationScore: integer("validation_score").notNull(),
+  targetMarket: text("target_market"),
+  validationData: jsonb("validation_data"), // Full validation result
+  starterPrompt: text("starter_prompt").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
+
+export const schema = {user, session, account, verification, userprofile, userAnalytics, featureAnalytics, idea, bookmarkedIdea, tokenUsage, vote, githubProject, report, workspaceOpportunity, workspaceIdea};

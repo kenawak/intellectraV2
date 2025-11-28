@@ -44,7 +44,7 @@ const baseNavItems = [
   },
   {
     title: "Workspace",
-    url: "/dashboard/projects",
+    url: "/dashboard/workspace",
     icon: IconFolder,
   },
 ]

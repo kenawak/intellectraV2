@@ -30,6 +30,7 @@ import {Loader2} from "lucide-react"
 import { authClient } from "@/lib/auth-client"
 import Link from "next/link"
 import {createUserprofile} from "@/server/users"
+import { usePostHog } from "@posthog/react"
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -42,6 +43,7 @@ export function LoginForm({
   const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
+  const posthog = usePostHog();
 
   const signInWithGoogle = async () => {
     setIsLoading(true);
@@ -51,8 +53,27 @@ export function LoginForm({
       callbackURL: "/dashboard",
     });
     console.log("data", data)
-    // ✅ Server action
-    // await createUserProfile(data.user.id);
+    
+    // Track button click
+    posthog?.capture('Button Clicked', {
+      button_text: 'Login with Google',
+      section: 'login',
+    });
+    
+    // Identify user and track sign in
+    if (data?.user) {
+      posthog?.identify(data.user.id, {
+        email: data.user.email,
+        name: data.user.name,
+        role: (data.user as { role?: string })?.role || 'user',
+      });
+      
+      posthog?.capture('User Signed Up', {
+        role: (data.user as { role?: string })?.role || 'user',
+        plan: 'free', // Default plan, update based on actual plan
+        method: 'google',
+      });
+    }
   
     setIsLoading(false);
   };
@@ -68,9 +89,27 @@ export function LoginForm({
   // 2. Define a submit handler.
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true)
+    
+    // Track button click
+    posthog?.capture('Button Clicked', {
+      button_text: 'Login',
+      section: 'login',
+    });
+    
     const {success, message} = await signIn(values.email, values.password)
     if(success){
       toast.success(message as string);
+      
+      // Identify user after successful login
+      const { data: session } = await authClient.getSession();
+      if (session?.user) {
+        posthog?.identify(session.user.id, {
+          email: session.user.email,
+          name: session.user.name,
+          role: (session.user as { role?: string })?.role || 'user',
+        });
+      }
+      
       router.push("dashboard")
     }
     else{

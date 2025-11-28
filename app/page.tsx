@@ -15,6 +15,8 @@ import { ThemeSwitcher } from '@/components/ui/shadcn-io/theme-switcher';
 import { LandingPageContent } from '@/components/LandingPageContent';
 import { BentoGrid } from '@/components/BentoGrid';
 import {PricingPage} from '@/components/PricingPage';
+import { usePostHog } from '@posthog/react';
+import { PostHogPageview } from '@/components/PostHogPageview';
 const features = [
   // Row 1: (4 columns) + (2 columns) = 6
   {
@@ -237,6 +239,7 @@ export default function LandingPage() {
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
   
   const { data: session, isPending } = authClient.useSession();
+  const posthog = usePostHog();
   const isAuthenticated = !!session?.user;
   const user = session?.user || null;
 
@@ -283,6 +286,14 @@ export default function LandingPage() {
       return;
     }
     setIsLoading(true);
+    
+    // Track feature used
+    posthog?.capture('Feature Used', {
+      feature_name: 'Idea Search',
+      user_id: user?.id,
+      query: query.substring(0, 100), // Limit query length
+    });
+    
     try {
       const params = new URLSearchParams({ prompt: query, provider: 'exa', numResults: '5' });
       const response = await fetch(`/api/ideas/generate?${params.toString()}`);
@@ -325,6 +336,7 @@ export default function LandingPage() {
           },
         }}
       />
+      <PostHogPageview />
       <div className="relative bg-background h-screen w-full flex flex-col items-center justify-center overflow-x-hidden">
       {/* Navigation Bar */}
         <motion.nav
@@ -444,7 +456,13 @@ export default function LandingPage() {
               )}
               {!isAuthenticated && (
                 <Button 
-                  onClick={() => router.push('/login')}
+                  onClick={() => {
+                    posthog?.capture('Button Clicked', {
+                      button_text: 'Sign In',
+                      section: 'hero',
+                    });
+                    router.push('/login');
+                  }}
                   className="text-sm border-border border lg:text-base px-4 lg:px-5 py-2 bg-card text-foreground hover:bg-card/80 rounded-xs font-medium hover:cursor-pointer transition-colors"
                 >
                   Sign In
@@ -491,7 +509,16 @@ export default function LandingPage() {
                     </>
                   )}
                   {!isAuthenticated && (
-                    <button onClick={() => router.push('/login')} className="bg-card text-foreground hover:bg-card/80 border border-border rounded-full font-medium hover:cursor-pointer transition-colors py-2 px-4 text-center">
+                    <button 
+                      onClick={() => {
+                        posthog?.capture('Button Clicked', {
+                          button_text: 'Sign In',
+                          section: 'mobile-menu',
+                        });
+                        router.push('/login');
+                      }} 
+                      className="bg-card text-foreground hover:bg-card/80 border border-border rounded-full font-medium hover:cursor-pointer transition-colors py-2 px-4 text-center"
+                    >
                       Sign In
                     </button>
                   )}
@@ -567,7 +594,13 @@ export default function LandingPage() {
                   className="right-2 px-4 py-2 text-sm bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-all duration-300 z-10 disabled:opacity-50 absolute"
                   whileHover={{ scale: isLoading ? 1 : 1.05 }}
                   whileTap={{ scale: isLoading ? 1 : 0.95 }}
-                  onClick={() => handleSearch(inputValue)}
+                  onClick={() => {
+                    posthog?.capture('Button Clicked', {
+                      button_text: 'Search',
+                      section: 'hero',
+                    });
+                    handleSearch(inputValue);
+                  }}
                   disabled={isLoading}
                 >
                   <motion.span
@@ -600,6 +633,10 @@ export default function LandingPage() {
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => {
+                  posthog?.capture('Button Clicked', {
+                    button_text: prompt.substring(0, 50),
+                    section: 'hero',
+                  });
                   setInputValue(prompt);
                   handleSearch(prompt);
                 }}
