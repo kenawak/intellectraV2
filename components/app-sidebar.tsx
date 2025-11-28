@@ -4,8 +4,9 @@ import * as React from "react"
 import {
   IconDashboard,
   IconFolder,
-  IconInnerShadowTop,
   IconPlus,
+  IconTrendingUp,
+  IconChecklist,
 } from "@tabler/icons-react"
 import {
   Card,
@@ -26,58 +27,67 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { authClient } from "@/lib/auth-client"
-import { Badge } from "@/components/ui/badge"
 
-interface AnalyticsData {
-  systemAnalytics: {
-    bookmarks: number
-    totalPublicIdeas: number
-    avgConfidence: number
-  }
-  userAnalytics: {
-    generationAttempts: number
-    remainingAttempts: number
-    resetTime: string | null
-  }
-}
+// Removed old analytics interface - using new comprehensive analytics system
 
-const navMain = [
+// Base navigation items (always visible)
+const baseNavItems = [
   {
     title: "Dashboard",
     url: "/dashboard",
     icon: IconDashboard,
   },
   {
-    title: "New Project",
-    url: "/dashboard/new-project",
-    icon: IconPlus,
+    title: "Idea Validator",
+    url: "/dashboard/idea-validator",
+    icon: IconChecklist,
   },
   {
-    title: "Bookmarks",
+    title: "Workspace",
     url: "/dashboard/projects",
     icon: IconFolder,
   },
 ]
 
+// Paid feature navigation items
+const paidNavItems = [
+  {
+    title: "Market Opportunities",
+    url: "/dashboard/market-opportunities",
+    icon: IconTrendingUp,
+  },
+]
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session } = authClient.useSession()
-  const [analytics, setAnalytics] = React.useState<AnalyticsData | null>(null)
+  const [userProfile, setUserProfile] = React.useState<{
+    plan: string | null;
+    paid: boolean | null;
+  } | null>(null)
 
   React.useEffect(() => {
-    const fetchAnalytics = async () => {
+    // Only fetch profile if session exists
+    if (!session?.user) return;
+    
+    const fetchUserProfile = async () => {
       try {
-        const response = await fetch('/api/analytics')
+        const response = await fetch('/api/user/profile', {
+          credentials: 'include',
+        })
         if (response.ok) {
           const data = await response.json()
-          setAnalytics(data)
+          setUserProfile({
+            plan: data.plan || null,
+            paid: data.paid ?? null,
+          })
         }
       } catch (error) {
-        console.error('Failed to fetch analytics:', error)
+        console.error('Failed to fetch user profile:', error)
       }
     }
 
-    fetchAnalytics()
-  }, [])
+    fetchUserProfile()
+  }, [session])
 
   const user = session ? {
     name: session.user.name,
@@ -112,54 +122,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navMain} />
-        {analytics && (
-          <div className="mx-3 my-2 space-y-3">
-            {/* <Card>
-              <CardHeader>
-                <CardTitle className="text-xs text-muted-foreground">
-                  Bookmarks
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Badge variant="secondary" className="text-xs">
-                  {analytics.systemAnalytics.bookmarks} saved
-                </Badge>
-              </CardContent>
-            </Card> */}
-        <Card className="p-2">
-  <CardHeader className="flex flex-col items-start">
-    <CardTitle className="text-sm font-medium text-muted-foreground">
-      Remaining Attempts
-    </CardTitle>
-  </CardHeader>
-  <CardContent>
-    <div className="flex items-center gap-3">
-      {/* Progress Bar */}
-      <div className="relative flex-1 h-3 bg-muted/60 rounded-full overflow-hidden">
-        <div
-          className="absolute left-0 top-0 h-full bg-gradient-to-r from-primary/90 to-primary rounded-full transition-all duration-500"
-          style={{
-            width: `${(analytics.userAnalytics.remainingAttempts / 5) * 100}%`,
-          }}
-        />
-      </div>
-
-      {/* Counter Badge */}
-      <div className="px-2 py-0.5 rounded-md border text-xs font-medium bg-background shadow-sm">
-        {analytics.userAnalytics.remainingAttempts}/5
-      </div>
-    </div>
-    <p className="mt-2 text-[11px] text-muted-foreground">
-      Each action reduces your remaining attempts.
-    </p>
-  </CardContent>
-</Card>
-
-          </div>
+        <NavMain items={baseNavItems} />
+        {/* Show Market Opportunities only for paid users */}
+        {userProfile && (userProfile.plan === 'pro' || userProfile.plan === 'enterprise' || userProfile.paid === true) && (
+          <NavMain items={paidNavItems} />
         )}
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="flex items-center justify-between p-3 border-t gap-2">
         <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>

@@ -46,6 +46,10 @@ const WorkspacePage = () => {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasApiKey, setHasApiKey] = useState<boolean | null>(null);
+  const [userProfile, setUserProfile] = useState<{ plan: string | null; paid: boolean | null } | null>(null);
+  const [buildingPrompt, setBuildingPrompt] = useState<string | null>(null);
+  const [generatingPrompt, setGeneratingPrompt] = useState(false);
 
   useEffect(() => {
     const fetchIdea = async () => {
@@ -71,7 +75,21 @@ const WorkspacePage = () => {
         setLoading(false);
       }
     };
+
+    const fetchUserProfile = async () => {
+      try {
+        const response = await fetch('/api/user/profile', { credentials: 'include' });
+        if (response.ok) {
+          const data = await response.json();
+          setUserProfile({ plan: data.plan || null, paid: data.paid ?? null });
+        }
+      } catch (err) {
+        console.error('Failed to fetch user profile:', err);
+      }
+    };
+
     fetchIdea();
+    fetchUserProfile();
   }, [id]);
 
   const generateSpecs = async () => {
@@ -81,14 +99,66 @@ const WorkspacePage = () => {
       // Convert tech stack config to JSON string
       const techStackParam = JSON.stringify(techStack);
       const res = await fetch(`/api/ideas/${id}/generate-spec?techStack=${encodeURIComponent(techStackParam)}`);
-      if (res.status === 429) throw new Error('Rate limit exceeded. Please try again later.');
-      if (!res.ok) throw new Error('Failed to generate spec');
+      
+      if (res.status === 403 || res.status === 400 || res.status === 429) {
+        const data = await res.json();
+        if (data.requiresApiKey) {
+          setError(data.message || 'API key required. Please add your Gemini API key in Settings.');
+          // Update API key status if it's invalid
+          if (data.invalidKey) {
+            setHasApiKey(false);
+          }
+        } else {
+          setError(data.error || 'Rate limit exceeded. Please try again later.');
+        }
+        return;
+      }
+      
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to generate spec');
+      }
+      
       const data = await res.json();
       setArtifacts(data);
+      
+      // Show success message with usage info
+      if (data.dailyUsage !== undefined) {
+        console.log(`Daily usage: ${data.dailyUsage}/${data.dailyLimit || 3}`);
+      }
     } catch (err) {
       setError((err as Error).message);
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const generateBuildingPrompt = async () => {
+    if (!idea) return;
+    
+    setGeneratingPrompt(true);
+    try {
+      const response = await fetch('/api/ideas/generate-prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          ideaId: id,
+          idea: idea.title,
+          summary: idea.summary,
+          productIdeas: idea.product_idea,
+          techStack: techStack,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to generate prompt');
+      const data = await response.json();
+      setBuildingPrompt(data.prompt);
+    } catch (err) {
+      console.error('Failed to generate prompt:', err);
+      alert('Failed to generate building prompt. Please try again.');
+    } finally {
+      setGeneratingPrompt(false);
     }
   };
 
@@ -130,7 +200,7 @@ const WorkspacePage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 p-6">
+      <div className="min-h-screen p-6">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -143,7 +213,7 @@ const WorkspacePage = () => {
 
   if (error && !idea) {
     return (
-      <div className="min-h-screen bg-gray-100 p-6">
+      <div className="min-h-screen p-6">
         <div className="max-w-4xl mx-auto">
           <div className="p-4 bg-red-50 border border-red-200 rounded-md">
             <p className="text-red-600">{error}</p>
@@ -159,7 +229,7 @@ const WorkspacePage = () => {
   if (!idea) return null;
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
+    <div className="min-h-screen p-6">
       <div className="max-w-4xl mx-auto">
       <Button>
       <Link href="/dashboard/projects" >
@@ -223,12 +293,34 @@ const WorkspacePage = () => {
         {/* Tech Stack Selector and Generate Button */}
         <Card className="mb-6">
           <CardContent className="pt-6">
+            {hasApiKey === false && (
+              <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                <div className="flex items-start gap-3">
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-yellow-900 mb-1">API Key Required</h4>
+                    <p className="text-sm text-yellow-800 mb-3">
+                      The workspace feature requires your own Gemini API key to generate project specifications. 
+                      Please add your API key in Settings to continue.
+                    </p>
+                    <Link href="/dashboard/settings">
+                      <Button variant="default" size="sm">
+                        Go to Settings
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
             <TechStackBuilder
               value={techStack}
               onChange={setTechStack}
             />
             <div className="flex gap-4 mt-4">
-              <Button onClick={generateSpecs} disabled={generating} className="flex-1">
+              <Button 
+                onClick={generateSpecs} 
+                disabled={generating || hasApiKey === false} 
+                className="flex-1"
+              >
                 {generating ? 'Generating...' : artifacts ? 'Regenerate Specs' : 'Generate Specs'}
               </Button>
               {artifacts && (
@@ -243,13 +335,87 @@ const WorkspacePage = () => {
                 </Button>
               )}
             </div>
+            {hasApiKey === false && (
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                Add your Gemini API key in Settings to enable spec generation
+              </p>
+            )}
           </CardContent>
         </Card>
 
+        {/* Building Prompt Section - Paid Users Only */}
+        {userProfile && (userProfile.plan === 'pro' || userProfile.plan === 'enterprise' || userProfile.paid === true) && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>AI Building Prompt</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Generate a detailed prompt for AI assistants (like Cursor, Claude, etc.) to help you build this project.
+              </p>
+              {!buildingPrompt ? (
+                <Button
+                  onClick={generateBuildingPrompt}
+                  disabled={generatingPrompt || !idea}
+                  className="w-full"
+                >
+                  {generatingPrompt ? 'Generating Prompt...' : 'Generate Building Prompt'}
+                </Button>
+              ) : (
+                <div className="space-y-4">
+                  <div className="p-4 bg-muted rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-semibold">Your Building Prompt</h4>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(buildingPrompt);
+                          alert('Prompt copied to clipboard!');
+                        }}
+                      >
+                        <IconCopy className="h-4 w-4 mr-2" />
+                        Copy
+                      </Button>
+                    </div>
+                    <ScrollArea className="h-64 w-full rounded-md border p-4">
+                      <pre className="text-sm whitespace-pre-wrap">{buildingPrompt}</pre>
+                    </ScrollArea>
+                  </div>
+                  <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                    <h4 className="font-semibold mb-2">How to Use</h4>
+                    <ol className="text-sm space-y-1 list-decimal list-inside text-muted-foreground">
+                      <li>Copy the prompt above</li>
+                      <li>Open your AI coding assistant (Cursor, Claude, etc.)</li>
+                      <li>Paste the prompt and start building</li>
+                      <li>The prompt includes all necessary context about your idea</li>
+                    </ol>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => setBuildingPrompt(null)}
+                    className="w-full"
+                  >
+                    Generate New Prompt
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {error && (
           <div className="p-4 bg-red-50 border border-red-200 rounded-md mb-6">
             <p className="text-red-600">{error}</p>
+            {error.includes('API key') && (
+              <div className="mt-2">
+                <Link href="/dashboard/settings">
+                  <Button variant="outline" size="sm">
+                    Go to Settings
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
         )}
 
@@ -320,16 +486,16 @@ const WorkspacePage = () => {
                 </CardContent>
               </Card>
 
-              {/* Code Stubs Section */}
+              {/* Implementation Specifications Section */}
               {artifacts.codeStubs && artifacts.codeStubs.files && artifacts.codeStubs.files.length > 0 && (
                 <Card className="w-full max-w-2xl">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle id="code-stubs" className="text-lg font-semibold">Code Stubs</CardTitle>
+                    <CardTitle id="implementation-specs" className="text-lg font-semibold">Implementation Specifications</CardTitle>
                   </CardHeader>
                   <CardContent className="pt-0">
                     <div className="space-y-2">
                       <p className="text-sm text-muted-foreground mb-4">
-                        Generated starter code files. Download individual files or get the full project ZIP above.
+                        Detailed technical specifications broken down for AI assistants or developers. These specs describe what needs to be built, not the code itself - perfect for feeding into Claude or other AI coding assistants.
                       </p>
                       <div className="space-y-2 max-h-80 overflow-y-auto">
                         {artifacts.codeStubs.files.map((file, index) => (

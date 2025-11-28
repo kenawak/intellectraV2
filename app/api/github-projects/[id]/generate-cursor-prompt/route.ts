@@ -96,7 +96,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     // Use pre-analyzed data
     const inferredTechStack = project.inferredTechStack || 'Unknown';
-    const keyFiles = project.keyFiles || [];
+    const keyFiles = Array.isArray(project.keyFiles) ? project.keyFiles : [];
 
     // Generate Cursor prompt using pre-analyzed data
     const promptRes = await gemini.models.generateContent({
@@ -125,7 +125,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       }]
     });
 
-    const cursorPrompt = promptRes.candidates[0].content.parts[0].text.replace(/```markdown|```/g, '');
+    const cursorPromptText = promptRes.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!cursorPromptText) {
+      return NextResponse.json({ error: 'Failed to generate cursor prompt' }, { status: 500 });
+    }
+    const cursorPrompt = cursorPromptText.replace(/```markdown|```/g, '');
 
     // Calculate tokens used
     const totalTokens = promptRes.usageMetadata?.totalTokenCount || estimatedTokens;

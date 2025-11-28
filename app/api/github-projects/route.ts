@@ -68,15 +68,16 @@ export async function POST(req: NextRequest) {
     try {
       const response = await octokit.repos.get({ owner, repo });
       repoData = response.data;
-    } catch (githubErr: any) {
+    } catch (githubErr: unknown) {
       console.error('GitHub API Error:', githubErr);
-      if (githubErr.status === 404) {
+      const apiError = githubErr as { status?: number };
+      if (apiError.status === 404) {
         return NextResponse.json({ error: 'Repository not found. Please check the URL and ensure the repository exists.' }, { status: 404 });
       }
-      if (githubErr.status === 403) {
+      if (apiError.status === 403) {
         return NextResponse.json({ error: 'Access denied. The repository might be private or you may have exceeded the rate limit.' }, { status: 403 });
       }
-      if (githubErr.status === 401) {
+      if (apiError.status === 401) {
         return NextResponse.json({ error: 'Authentication failed. Please check the GitHub token configuration.' }, { status: 401 });
       }
       return NextResponse.json({ error: 'Failed to fetch repository information. Please try again later.' }, { status: 500 });

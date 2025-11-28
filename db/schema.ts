@@ -71,10 +71,36 @@ export const userprofile = pgTable("userprofile", {
     customerId: text("customer_id"),
     totalTokensSpent: integer("total_tokens_spent").default(0).notNull(),
     tokenLimit: integer("token_limit").default(10000).notNull(),
+    geminiApiKeyEncrypted: text("gemini_api_key_encrypted"),
+    geminiApiKeyIv: text("gemini_api_key_iv"),
+    geminiApiKeyVersion: integer("gemini_api_key_version").default(1),
+    marketSpecialization: text("market_specialization"),
+    specializationPath: text("specialization_path").array().default([]),
+    onboardingComplete: boolean("onboarding_complete").default(false).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
   });
 
+// Feature Analytics - Comprehensive tracking for core features
+export const featureAnalytics = pgTable("feature_analytics", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  feature: text("feature").notNull(), // 'bookmark' | 'idea-validator' | 'market-opportunities' | 'new-project'
+  action: text("action").notNull(), // 'create' | 'read' | 'update' | 'delete' | 'generate' | 'validate' | 'search'
+  status: text("status").notNull(), // 'success' | 'error' | 'rate_limited'
+  tokensUsed: integer("tokens_used").default(0).notNull(),
+  inputTokens: integer("input_tokens").default(0),
+  outputTokens: integer("output_tokens").default(0),
+  metadata: jsonb("metadata"), // Additional context (query, idea text, error message, etc.)
+  duration: integer("duration"), // Duration in milliseconds
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+});
+
+// Legacy userAnalytics table - kept for backward compatibility but deprecated
 export const userAnalytics = pgTable("user_analytics", {
   id: text("id").primaryKey(),
   userId: text("user_id").unique(),
@@ -91,6 +117,8 @@ export const userAnalytics = pgTable("user_analytics", {
   isTokenRateLimited: boolean("is_token_rate_limited").default(false),
   tokenLimitPerHour: integer("token_limit_per_hour").default(100000),
   sessionId: text("session_id"),
+  specGenerationsToday: integer("spec_generations_today").default(0),
+  specGenerationsResetDate: timestamp("spec_generations_reset_date"),
 });
 
 export const idea = pgTable("idea", {
@@ -176,5 +204,21 @@ export const githubProject = pgTable("github_project", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const report = pgTable("report", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  query: text("query").notNull(),
+  marketSpecialization: text("market_specialization"),
+  reportContent: text("report_content").notNull(),
+  resultsCount: integer("results_count"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
 
-export const schema = {user, session, account, verification, userprofile, userAnalytics, idea, bookmarkedIdea, tokenUsage, vote, githubProject};
+
+export const schema = {user, session, account, verification, userprofile, userAnalytics, featureAnalytics, idea, bookmarkedIdea, tokenUsage, vote, githubProject, report};

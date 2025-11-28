@@ -3,8 +3,6 @@ dotenv.config();
 import { GoogleGenAI } from "@google/genai";
 import { db } from '@/db/drizzle';
 import { idea } from '@/db/schema';
-import { eq } from 'drizzle-orm';
-import fs from 'fs';
 import { SearchProviderFactory, SearchProvider, SearchOptions } from './search-providers';
 
 const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -80,10 +78,11 @@ async function generateDeveloperSaaSIdeas(formattedPosts: string) {
       // Successful response, return the result
       return { text: cleanedResponse, usage: res.usageMetadata };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       // The API error you were experiencing has a 'status' property of 503
       // We check for it and if we have retries left
-      if (error.status === 503 && attempt < MAX_RETRIES - 1) {
+      const apiError = error as { status?: number };
+      if (apiError.status === 503 && attempt < MAX_RETRIES - 1) {
         // Calculate exponential backoff time: (2^attempt) * 1000 milliseconds
         // e.g., 1st retry: 2^1 * 1s = 2s, 2nd: 2^2 * 1s = 4s, 3rd: 2^3 * 1s = 8s
         const backoffTime = Math.pow(2, attempt + 1) * 1000;
@@ -138,18 +137,6 @@ async function fetchRecentDeveloperPosts(
     }).join("\n");
 }
 
-function saveContent(content: string) {
-  try {
-    fs.writeFile("./content_generated.json", content, err => {
-      if (err) {
-        console.log(err.message)
-      }
-      console.log("Content saved successfully.");
-    });
-  } catch (err) {
-    console.error("Error writing to file:", err);
-  }
-}
 
 export async function generateIdeas(
   query: string = "developer side project ideas coding problems",
@@ -165,10 +152,10 @@ export async function generateIdeas(
     const parsedIdeas = JSON.parse(ideasJson);
 
     // First save ALL ideas to public collection (they'll be removed if bookmarked later)
-    const sanitizedIdeas = parsedIdeas.map((idea: any) => {
+    const sanitizedIdeas = parsedIdeas.map((idea: Record<string, unknown>) => {
       // Extract source_site if not provided, fallback to extracting from source_url
-      let sourceSite = idea.source_site || "";
-      if (!sourceSite && idea.source_url) {
+      let sourceSite = typeof idea.source_site === 'string' ? idea.source_site : "";
+      if (!sourceSite && typeof idea.source_url === 'string' && idea.source_url) {
         try {
           const urlObj = new URL(idea.source_url);
           sourceSite = urlObj.hostname.replace(/^www\./, '');
@@ -199,10 +186,11 @@ export async function generateIdeas(
     for (const ideaData of sanitizedIdeas) {
       try {
         await db.insert(idea).values(ideaData).onConflictDoNothing();
-      } catch (err: any) {
+      } catch (err: unknown) {
         // Ignore duplicate key errors (unique constraint on sourceUrl)
         // Error code 23505 is PostgreSQL's unique constraint violation
-        if (err?.code === '23505' || err?.constraint === 'idea_source_url_unique') {
+        const dbError = err as { code?: string; constraint?: string };
+        if (dbError.code === '23505' || dbError.constraint === 'idea_source_url_unique') {
           console.log(`Skipping duplicate idea with source_url: ${ideaData.sourceUrl}`);
           continue;
         }

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Badge } from "@/components/ui/badge"
+import {ModeToggle} from "@/components/mode-toggle"
 
 interface AnalyticsData {
   systemAnalytics: {
@@ -50,12 +51,13 @@ export function SiteHeader() {
         <div className="ml-auto flex items-center gap-2">
           <Button variant="ghost" asChild size="sm" className="hidden sm:flex relative">
             <a
-              href="/dashboard/projects"
+              href="/projects"
               className="dark:text-foreground flex items-center gap-2"
             >
-              {analytics ? `(${analytics.systemAnalytics.totalPublicIdeas}) Projects` : 'Projects'}
+              {/* {analytics ? `(${analytics.systemAnalytics.totalPublicIdeas}) Projects` : 'Projects'} */}
             </a>
           </Button>
+          <ModeToggle />
         </div>
       </div>
     </header>

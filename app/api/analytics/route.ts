@@ -1,52 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth, requireAdmin } from '@/lib/auth-utils';
 import { auth } from '@/lib/auth';
-import { db } from '@/db/drizzle';
-import { idea, bookmarkedIdea, userAnalytics } from '@/db/schema';
-import { count, eq, avg } from 'drizzle-orm';
 
+/**
+ * GET /api/analytics
+ * 
+ * Redirects to the new comprehensive feature analytics endpoint.
+ * This maintains backward compatibility while using the new system.
+ */
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: req.headers })
-    const userId = session?.user.id;
-
-    // System analytics
-    const totalPublicIdeas = await db.select({ count: count() }).from(idea);
-    const totalBookmarks = await db.select({ count: count() }).from(bookmarkedIdea);
-    const avgConfidenceResult = await db.select({ avg: avg(idea.confidenceScore) }).from(idea);
-
-    const systemData = {
-      bookmarks: totalBookmarks[0].count,
-      totalPublicIdeas: totalPublicIdeas[0].count,
-      avgConfidence: Math.round(Number(avgConfidenceResult[0].avg) || 0),
-    };
-
-    // User analytics
-    const userAnalytic = userId ? await db.select().from(userAnalytics).where(eq(userAnalytics.userId, userId)).limit(1) : [];
-
-    // Calculate average confidence from user's bookmarked ideas (as "generated projects")
-    let userAvgConfidence = 0;
-    if (userId) {
-      const userBookmarks = await db.select().from(bookmarkedIdea).where(eq(bookmarkedIdea.userId, userId));
-      if (userBookmarks.length > 0) {
-        // Since bookmarkedIdea doesn't have confidenceScore, use default 85
-        userAvgConfidence = 85;
-      }
+    const session = await auth.api.getSession({ headers: req.headers });
+    
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
     }
 
-    const userData = {
-      generationAttempts: userAnalytic[0]?.generationAttemptsCount || 0,
-      remainingAttempts: 5 - (userAnalytic[0]?.generationAttemptsCount || 0),
-      resetTime: userAnalytic[0]?.generationAttemptsResetTime || null,
-      avgConfidence: userAvgConfidence,
-    };
-
-    return NextResponse.json({
-      systemAnalytics: systemData,
-      userAnalytics: userData,
+    // Redirect to the new feature analytics endpoint
+    const baseUrl = req.nextUrl.origin;
+    const analyticsUrl = new URL('/api/analytics/features', baseUrl);
+    
+    // Copy query parameters
+    req.nextUrl.searchParams.forEach((value, key) => {
+      analyticsUrl.searchParams.set(key, value);
     });
+
+    // Fetch from the new endpoint
+    const response = await fetch(analyticsUrl.toString(), {
+      headers: {
+        'Cookie': req.headers.get('cookie') || '',
+      },
+    });
+
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: 'Failed to fetch analytics' },
+        { status: response.status }
+      );
+    }
+
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (err) {
     console.error("Error fetching analytics:", err);
-    return NextResponse.json({ error: "Failed to fetch analytics" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch analytics" },
+      { status: 500 }
+    );
   }
 }

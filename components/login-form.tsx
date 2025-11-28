@@ -29,7 +29,7 @@ import { useEffect, useState } from "react"
 import {Loader2} from "lucide-react"
 import { authClient } from "@/lib/auth-client"
 import Link from "next/link"
-import {createUserProfile} from "@/server/users"
+import {createUserprofile} from "@/server/users"
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -78,16 +78,18 @@ export function LoginForm({
     }
     setIsLoading(false)
   }
-  useEffect(()=>{
-    const checkAuth = async ()=>{
-    const {data: session} = await authClient.getSession();
-    console.log(session)
-    if(session?.user){
+  const { data: session, isPending: isSessionLoading } = authClient.useSession();
+
+  useEffect(() => {
+    // Only redirect if we have a valid session with a user
+    // Wait for session to finish loading before checking
+    if (isSessionLoading) return;
+    
+    // Only redirect if session exists AND has a valid user
+    if (session?.user) {
       router.push("/dashboard");
     }
-  }
-  checkAuth()
-  })
+  }, [session, isSessionLoading, router])
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>

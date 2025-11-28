@@ -5,13 +5,16 @@ import { SearchProvider } from '@/lib/search-providers';
 import { db } from '@/db/drizzle';
 import { userAnalytics, tokenUsage, userprofile, idea } from '@/db/schema';
 import { eq, sql, desc } from 'drizzle-orm';
+import { trackFeatureAnalytics, extractRequestMetadata } from '@/lib/analytics-service';
 
 export async function GET(req: NextRequest) {
+  const startTime = Date.now();
   try {
     const session = await auth.api.getSession({
           headers: req.headers
       })
     const userId = session?.user.id;
+    const { ipAddress, userAgent } = extractRequestMetadata(req);
     // const userId = 'VOeNpacxjN1pLXXxgzvLmyG8y9PeEwb6'; // Real user ID
     console.log("user id", userId)
 
@@ -49,6 +52,24 @@ export async function GET(req: NextRequest) {
     // If attempts or tokens rate limited, return early
     if (attemptsRateLimited || tokensRateLimited) {
       const errorMsg = attemptsRateLimited ? 'Generation attempts rate limit exceeded (5 per hour)' : 'Token rate limit exceeded';
+      
+      // Track rate limit analytics
+      await trackFeatureAnalytics({
+        userId,
+        feature: 'new-project',
+        action: 'generate',
+        status: 'rate_limited',
+        metadata: {
+          reason: attemptsRateLimited ? 'attempts_limit' : 'token_limit',
+          attempts,
+          tokensUsed,
+          tokenLimit,
+        },
+        duration: Date.now() - startTime,
+        ipAddress: ipAddress || undefined,
+        userAgent: userAgent || undefined,
+      });
+      
       // Still update analytics
       await db.insert(userAnalytics).values({
         id: crypto.randomUUID(),
@@ -86,6 +107,7 @@ export async function GET(req: NextRequest) {
 
     const result = await generateIdeas(prompt, provider, sites, numResults);
     const { ideas, usage } = result;
+    const duration = Date.now() - startTime;
 
     // Note: generateIdeas() already inserts ideas into the database with conflict handling.
     // The ideas are returned here for the API response. No need to insert again.
@@ -93,6 +115,27 @@ export async function GET(req: NextRequest) {
     const totalTokens = usage?.totalTokenCount || 0;
     const inputTokens = usage?.promptTokenCount || 0;
     const outputTokens = usage?.candidatesTokenCount || 0;
+
+    // Track analytics
+    await trackFeatureAnalytics({
+      userId,
+      feature: 'new-project',
+      action: 'generate',
+      status: 'success',
+      tokensUsed: totalTokens,
+      inputTokens,
+      outputTokens,
+      metadata: {
+        prompt,
+        provider,
+        sites: sites || [],
+        numResults,
+        ideasGenerated: ideas.length,
+      },
+      duration,
+      ipAddress: ipAddress || undefined,
+      userAgent: userAgent || undefined,
+    });
 
     // Insert token usage
     await db.insert(tokenUsage).values({
@@ -148,6 +191,30 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ideas, usage });
   } catch (err) {
     console.error(err);
+    
+    // Track error analytics
+    try {
+      const session = await auth.api.getSession({ headers: req.headers }).catch(() => null);
+      if (session?.user?.id) {
+        const { ipAddress, userAgent } = extractRequestMetadata(req);
+        const duration = Date.now() - startTime;
+        await trackFeatureAnalytics({
+          userId: session.user.id,
+          feature: 'new-project',
+          action: 'generate',
+          status: 'error',
+          metadata: {
+            error: err instanceof Error ? err.message : 'Unknown error',
+          },
+          duration,
+          ipAddress: ipAddress || undefined,
+          userAgent: userAgent || undefined,
+        });
+      }
+    } catch (analyticsError) {
+      console.error('Failed to track error analytics:', analyticsError);
+    }
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

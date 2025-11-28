@@ -1,0 +1,274 @@
+{
+    "Physical": {
+      "Product Design": {
+        "3D Modeling": {
+          "CAD Design": {},
+          "Prototyping": {},
+          "3D Printing": {}
+        },
+        "Industrial Design": {
+          "Furniture Design": {},
+          "Consumer Products": {},
+          "Appliances": {}
+        },
+        "Fashion_Design": {
+          "Clothing_Design": {},
+          "Accessory_Design": {},
+          "Shoe_Design": {}
+        }
+      },
+      "Manufacturing": {
+        "Electronics_Manufacturing": {
+          "PCB_Design": {},
+          "Assembly": {},
+          "Testing": {}
+        },
+        "Fabrication": {
+          "CNC_Machining": {},
+          "Laser_Cutting": {},
+          "Injection_Molding": {}
+        },
+        "Hardware_Prototyping": {
+          "IoT_Devices": {},
+          "Smart_Products": {}
+        }
+      },
+      "Architecture": {
+        "Interior_Design": {
+          "Home_Design": {},
+          "Commercial_Spaces": {}
+        },
+        "Urban_Planning": {
+          "Public_Spaces": {},
+          "Sustainability_Projects": {}
+        },
+        "Landscape_Architecture": {
+          "Parks": {},
+          "Gardens": {}
+        }
+      },
+      "Energy_and_Environment": {
+        "Renewable_Energy": {
+          "Solar": {},
+          "Wind": {},
+          "Hydro": {}
+        },
+        "Sustainability": {
+          "Circular_Economy": {},
+          "Waste_Management": {}
+        },
+        "Green_Building": {
+          "Eco_Materials": {},
+          "Energy_Efficiency": {}
+        }
+      }
+    },
+    "Digital": {
+      "Software_Development": {
+        "Web_Development": {
+          "Frontend": {},
+          "Backend": {},
+          "Fullstack": {}
+        },
+        "Mobile_Apps": {
+          "iOS": {},
+          "Android": {},
+          "Cross_Platform": {}
+        },
+        "Game_Development": {
+          "2D_Games": {},
+          "3D_Games": {},
+          "VR_AR_Games": {}
+        },
+        "AI_ML": {
+          "Machine_Learning_Models": {},
+          "Computer_Vision": {},
+          "NLP": {}
+        },
+        "No_Code_Low_Code": {
+          "Automation": {},
+          "App_Builders": {},
+          "Workflow_Tools": {}
+        }
+      },
+      "Data_and_Analytics": {
+        "Data_Science": {
+          "Data_Engineering": {},
+          "Visualization": {}
+        },
+        "Big_Data": {
+          "ETL_Pipelines": {},
+          "Cloud_Data": {}
+        },
+        "Business_Intelligence": {
+          "Reporting_Tools": {},
+          "KPI_Dashboards": {}
+        }
+      },
+      "Blockchain": {
+        "Cryptocurrency": {
+          "DeFi": {},
+          "Trading": {}
+        },
+        "NFTs": {
+          "Art_Collections": {},
+          "Gaming_Assets": {}
+        },
+        "Smart_Contracts": {
+          "DAOs": {},
+          "Automation": {}
+        }
+      },
+      "Cybersecurity": {
+        "Network_Security": {},
+        "Application_Security": {},
+        "Penetration_Testing": {}
+      },
+      "AR_VR_XR": {
+        "Virtual_Reality": {},
+        "Augmented_Reality": {},
+        "Mixed_Reality": {}
+      },
+      "Digital_Design": {
+        "UI_UX_Design": {
+          "Wireframing": {},
+          "Prototyping": {},
+          "User_Research": {}
+        },
+        "Graphic_Design": {
+          "Branding": {},
+          "Motion_Graphics": {},
+          "Illustration": {}
+        },
+        "3D_Design": {
+          "Modeling": {},
+          "Rendering": {},
+          "Animation": {}
+        }
+      },
+      "Content_Creation": {
+        "Video_Production": {
+          "Filmmaking": {},
+          "Editing": {},
+          "Post_Production": {}
+        },
+        "Photography": {
+          "Product_Photography": {},
+          "Portrait_Photography": {}
+        },
+        "Writing": {
+          "Copywriting": {},
+          "Blogging": {},
+          "Technical_Writing": {}
+        }
+      }
+    },
+    "Services": {
+      "Marketing": {
+        "Digital_Marketing": {
+          "SEO": {},
+          "Social_Media": {},
+          "Content_Marketing": {}
+        },
+        "Advertising": {
+          "Paid_Ads": {},
+          "Influencer_Marketing": {}
+        },
+        "Brand_Strategy": {
+          "Positioning": {},
+          "Naming": {}
+        }
+      },
+      "Consulting": {
+        "Business_Consulting": {
+          "Strategy": {},
+          "Operations": {}
+        },
+        "Technology_Consulting": {
+          "Cloud": {},
+          "Automation": {}
+        },
+        "Design_Consulting": {
+          "Product_Design": {},
+          "UX_Strategy": {}
+        }
+      },
+      "Finance_and_Legal": {
+        "Financial_Services": {
+          "Accounting": {},
+          "Investment": {}
+        },
+        "Legal_Services": {
+          "Contracts": {},
+          "Compliance": {}
+        },
+        "Insurance": {
+          "Health": {},
+          "Property": {}
+        }
+      },
+      "Education_and_Training": {
+        "Online_Courses": {
+          "Tech": {},
+          "Design": {},
+          "Business": {}
+        },
+        "Workshops": {
+          "Corporate_Training": {},
+          "Bootcamps": {}
+        },
+        "Tutoring": {
+          "STEM": {},
+          "Languages": {}
+        }
+      },
+      "Health_and_Wellness": {
+        "Mental_Health": {
+          "Therapy": {},
+          "Meditation": {}
+        },
+        "Fitness": {
+          "Personal_Training": {},
+          "Yoga": {}
+        },
+        "Nutrition": {
+          "Meal_Plans": {},
+          "Supplements": {}
+        }
+      },
+      "Entertainment": {
+        "Music": {
+          "Production": {},
+          "Distribution": {}
+        },
+        "Film_TV": {
+          "Production": {},
+          "Streaming": {}
+        },
+        "Gaming": {
+          "eSports": {},
+          "Game_Streaming": {}
+        }
+      },
+      "Hospitality": {
+        "Travel": {
+          "Tourism": {},
+          "Booking_Services": {}
+        },
+        "Food_and_Beverage": {
+          "Restaurants": {},
+          "Catering": {}
+        },
+        "Events": {
+          "Conferences": {},
+          "Festivals": {}
+        }
+      },
+      "Real_Estate": {
+        "Property_Management": {},
+        "Architecture_Services": {},
+        "Construction": {}
+      }
+    }
+  }
+  

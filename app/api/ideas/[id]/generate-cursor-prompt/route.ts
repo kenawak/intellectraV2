@@ -6,6 +6,50 @@ import { bookmarkedIdea, tokenUsage, userprofile, userAnalytics } from '@/db/sch
 import { eq, sql } from 'drizzle-orm';
 import { Octokit } from '@octokit/rest';
 
+/**
+ * Type guard to check if GitHub content response is a file with content property
+ */
+type GitHubContentItem = {
+  type: 'file' | 'dir' | 'submodule' | 'symlink';
+  name: string;
+  path: string;
+  content?: string;
+  encoding?: string;
+  [key: string]: unknown;
+};
+
+type GitHubFileContent = {
+  type: 'file';
+  content: string;
+  encoding?: string;
+  name?: string;
+  [key: string]: unknown;
+};
+
+// Octokit can return an array (directory listing) or a single item (file)
+type GitHubContentResponse = GitHubContentItem[] | GitHubContentItem;
+
+function isFileWithContent(
+  content: unknown
+): content is GitHubFileContent {
+  return (
+    !Array.isArray(content) &&
+    typeof content === 'object' &&
+    content !== null &&
+    'type' in content &&
+    content.type === 'file' &&
+    'content' in content &&
+    typeof content.content === 'string' &&
+    content.content.length > 0
+  );
+}
+
+function isDirectoryListing(
+  content: unknown
+): content is GitHubContentItem[] {
+  return Array.isArray(content) && content.length > 0;
+}
+
 const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 
@@ -110,33 +154,45 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     // Fetch file structure (top level)
-    const { data: files } = await octokit.repos.getContent({ owner, repo, path: '' });
+    const { data: filesDataRaw } = await octokit.repos.getContent({ owner, repo, path: '' });
+    const filesData = filesDataRaw as unknown;
+
+    // Ensure files is a directory listing (array)
+    if (!isDirectoryListing(filesData)) {
+      return NextResponse.json({ error: 'Expected directory listing but received single file' }, { status: 500 });
+    }
 
     // Analyze key files
     let packageJson = null;
     let requirementsTxt = null;
     let inferredTechStack = techStack || 'Next.js, TypeScript, Tailwind CSS';
 
-    for (const file of files) {
-      if (file.name === 'package.json' && file.type === 'file') {
+    for (const file of filesData) {
+      if (file.type === 'file' && file.name === 'package.json') {
         try {
-          const { data: content } = await octokit.repos.getContent({ owner, repo, path: 'package.json' });
-          packageJson = JSON.parse(Buffer.from(content.content, 'base64').toString());
-          // Infer tech stack from dependencies
-          const deps = { ...packageJson.dependencies, ...packageJson.devDependencies };
-          if (deps.next) inferredTechStack = 'Next.js, TypeScript, Tailwind CSS';
-          else if (deps.react) inferredTechStack = 'React, TypeScript, CSS';
-          else if (deps.express) inferredTechStack = 'Express.js, Node.js, MongoDB';
-          else if (deps.django) inferredTechStack = 'Django, Python, PostgreSQL';
-          else if (deps.flask) inferredTechStack = 'Flask, Python, SQLite';
+          const { data: contentData } = await octokit.repos.getContent({ owner, repo, path: 'package.json' });
+          
+          if (isFileWithContent(contentData)) {
+            packageJson = JSON.parse(Buffer.from(contentData.content, 'base64').toString());
+            // Infer tech stack from dependencies
+            const deps = { ...packageJson.dependencies, ...packageJson.devDependencies };
+            if (deps.next) inferredTechStack = 'Next.js, TypeScript, Tailwind CSS';
+            else if (deps.react) inferredTechStack = 'React, TypeScript, CSS';
+            else if (deps.express) inferredTechStack = 'Express.js, Node.js, MongoDB';
+            else if (deps.django) inferredTechStack = 'Django, Python, PostgreSQL';
+            else if (deps.flask) inferredTechStack = 'Flask, Python, SQLite';
+          }
         } catch (e) {
           // Ignore parsing errors
         }
-      } else if (file.name === 'requirements.txt' && file.type === 'file') {
+      } else if (file.type === 'file' && file.name === 'requirements.txt') {
         try {
-          const { data: content } = await octokit.repos.getContent({ owner, repo, path: 'requirements.txt' });
-          requirementsTxt = Buffer.from(content.content, 'base64').toString();
-          inferredTechStack = 'Flask, Python, SQLite'; // Default for Python repos
+          const { data: contentData } = await octokit.repos.getContent({ owner, repo, path: 'requirements.txt' });
+          
+          if (isFileWithContent(contentData)) {
+            requirementsTxt = Buffer.from(contentData.content, 'base64').toString();
+            inferredTechStack = 'Flask, Python, SQLite'; // Default for Python repos
+          }
         } catch (e) {
           // Ignore
         }
@@ -156,13 +212,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
             Description: ${repoData.description || 'No description'}
             Language: ${repoData.language}
             Inferred Tech Stack: ${inferredTechStack}
-            Key Files: ${files.map(f => f.name).join(', ')}
+            Key Files: ${filesData.map(f => f.name || 'unknown').join(', ')}
 
             Idea Details:
             Title: ${ideaData.title}
             Summary: ${ideaData.summary}
-            Unmet Needs: ${ideaData.unmetNeeds.join(', ')}
-            Product Idea: ${ideaData.productIdea.join(', ')}
+            Unmet Needs: ${Array.isArray(ideaData.unmetNeeds) ? ideaData.unmetNeeds.join(', ') : 'None'}
+            Product Idea: ${Array.isArray(ideaData.productIdea) ? ideaData.productIdea.join(', ') : 'None'}
 
             ${userPrompt ? `Custom Instructions: ${userPrompt}` : ''}
 
@@ -176,7 +232,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       }]
     });
 
-    const cursorPrompt = promptRes.candidates[0].content.parts[0].text.replace(/```markdown|```/g, '');
+    const cursorPromptText = promptRes.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!cursorPromptText) {
+      return NextResponse.json({ error: 'Failed to generate cursor prompt' }, { status: 500 });
+    }
+    const cursorPrompt = cursorPromptText.replace(/```markdown|```/g, '');
 
     // Calculate tokens used
     const totalTokens = promptRes.usageMetadata?.totalTokenCount || estimatedTokens;
@@ -233,9 +293,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     });
 
     return NextResponse.json({ cursorPrompt });
-  } catch (err) {
+  } catch (err: unknown) {
     console.error(err);
-    if (err.status === 404) {
+    const error = err as { status?: number };
+    if (error.status === 404) {
       return NextResponse.json({ error: 'Repository not found' }, { status: 404 });
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

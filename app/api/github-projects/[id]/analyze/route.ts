@@ -6,14 +6,64 @@ import { githubProject, tokenUsage, userprofile, userAnalytics } from '@/db/sche
 import { eq, sql } from 'drizzle-orm';
 import { Octokit } from '@octokit/rest';
 
+/**
+ * Type guard to check if GitHub content response is a file with content property
+ */
+type GitHubContentItem = {
+  type: 'file' | 'dir' | 'submodule' | 'symlink';
+  name: string;
+  path: string;
+  content?: string;
+  encoding?: string;
+  [key: string]: unknown;
+};
+
+type GitHubFileContent = {
+  type: 'file';
+  content: string;
+  encoding?: string;
+  name?: string;
+  [key: string]: unknown;
+};
+
+// Octokit can return an array (directory listing) or a single item (file)
+type GitHubContentResponse = GitHubContentItem[] | GitHubContentItem;
+
+function isFileWithContent(
+  content: unknown
+): content is GitHubFileContent {
+  return (
+    !Array.isArray(content) &&
+    typeof content === 'object' &&
+    content !== null &&
+    'type' in content &&
+    content.type === 'file' &&
+    'content' in content &&
+    typeof content.content === 'string' &&
+    content.content.length > 0
+  );
+}
+
+function isDirectoryListing(
+  content: unknown
+): content is GitHubContentItem[] {
+  return Array.isArray(content) && content.length > 0;
+}
+
 const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const octokit = new Octokit({
   auth: process.env.GITHUB_TOKEN || undefined
 });
 
+interface RepoData {
+  name: string;
+  description?: string | null;
+  language?: string | null;
+}
+
 async function analyzeTechStackWithAI(
-  repoData: any,
-  packageJson: any,
+  repoData: RepoData,
+  packageJson: Record<string, unknown> | null,
   requirementsTxt: string | null,
   keyFiles: string[]
 ): Promise<string> {
@@ -147,20 +197,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const [, , , owner, repo] = project.repoUrl.split('/');
 
     // Fetch repo metadata and files
-    let repoData, files;
+    let repoData;
+    let filesData: unknown;
     try {
       const [repoResponse, filesResponse] = await Promise.all([
         octokit.repos.get({ owner, repo }),
         octokit.repos.getContent({ owner, repo, path: '' })
       ]);
       repoData = repoResponse.data;
-      files = filesResponse.data;
-    } catch (githubErr: any) {
+      filesData = filesResponse.data;
+    } catch (githubErr: unknown) {
       console.error('GitHub API Error:', githubErr);
-      if (githubErr.status === 404) {
+      const apiError = githubErr as { status?: number };
+      if (apiError.status === 404) {
         return NextResponse.json({ error: 'Repository not found. Please check if it still exists.' }, { status: 404 });
       }
-      if (githubErr.status === 403) {
+      if (apiError.status === 403) {
         return NextResponse.json({ error: 'Access denied. The repository might be private or you may have exceeded the rate limit.' }, { status: 403 });
       }
       return NextResponse.json({ error: 'Failed to analyze repository. Please try again later.' }, { status: 500 });
@@ -170,27 +222,31 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     let packageJson = null;
     let requirementsTxt = null;
     const keyFiles: string[] = [];
-    const filesArray = Array.isArray(files) ? files : [files];
+    
+    // Ensure we have a directory listing (array of files)
+    if (!isDirectoryListing(filesData)) {
+      return NextResponse.json({ error: 'Expected directory listing but received single file' }, { status: 500 });
+    }
 
-    for (const file of filesArray) {
-      keyFiles.push(file.name);
+    for (const file of filesData) {
+      if ('name' in file && typeof file.name === 'string') {
+        keyFiles.push(file.name);
+      }
 
-      if (file.name === 'package.json' && file.type === 'file') {
+      if (file.type === 'file' && file.name === 'package.json') {
         try {
-          const { data: content } = await octokit.repos.getContent({ owner, repo, path: 'package.json' });
-          const fileContent = content as any;
-          if (fileContent.content) {
-            packageJson = JSON.parse(Buffer.from(fileContent.content, 'base64').toString());
+          const { data: contentData } = await octokit.repos.getContent({ owner, repo, path: 'package.json' });
+          if (isFileWithContent(contentData)) {
+            packageJson = JSON.parse(Buffer.from(contentData.content, 'base64').toString());
           }
         } catch (e) {
           console.error('Error parsing package.json:', e);
         }
-      } else if (file.name === 'requirements.txt' && file.type === 'file') {
+      } else if (file.type === 'file' && file.name === 'requirements.txt') {
         try {
-          const { data: content } = await octokit.repos.getContent({ owner, repo, path: 'requirements.txt' });
-          const fileContent = content as any;
-          if (fileContent.content) {
-            requirementsTxt = Buffer.from(fileContent.content, 'base64').toString();
+          const { data: contentData } = await octokit.repos.getContent({ owner, repo, path: 'requirements.txt' });
+          if (isFileWithContent(contentData)) {
+            requirementsTxt = Buffer.from(contentData.content, 'base64').toString();
           }
         } catch (e) {
           console.error('Error parsing requirements.txt:', e);

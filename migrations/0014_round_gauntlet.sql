@@ -1,1 +1,0 @@
-ALTER TABLE "github_project" ADD COLUMN "last_analyzed_at" timestamp;

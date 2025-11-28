@@ -120,7 +120,7 @@ export default function WorkspacePage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold">Project Workspace</h1>
+        <h1 className="text-3xl font-bold">Workspace</h1>
         <AddGitHubProjectModal onProjectAdded={() => {
           // Refresh the GitHub projects list
           fetch('/api/github-projects')
@@ -151,7 +151,7 @@ export default function WorkspacePage() {
                 Generate and bookmark ideas to start working on them.
               </p>
               <Button asChild>
-                <Link href="/dashboard/new-project">Generate Ideas</Link>
+                <Link href="/dashboard/idea-validator">Generate Ideas</Link>
               </Button>
             </div>
           ) : (

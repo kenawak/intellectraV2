@@ -9,6 +9,10 @@ export async function GET(req: NextRequest) {
     const session = await requireAuth(req);
     const userId = session.user.id;
 
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID not found' }, { status: 401 });
+    }
+
     const bookmarks = await db.select().from(bookmarkedIdea).where(eq(bookmarkedIdea.userId, userId)).orderBy(bookmarkedIdea.createdAt);
 
     const formattedBookmarks = bookmarks.map((b) => ({
@@ -24,7 +28,7 @@ export async function GET(req: NextRequest) {
       confidenceScore: b.confidenceScore,
       suggestedPlatforms: b.suggestedPlatforms ? (() => {
         try {
-          return JSON.parse(b.suggestedPlatforms)
+          return JSON.parse(b.suggestedPlatforms as string)
         } catch {
           return []
         }

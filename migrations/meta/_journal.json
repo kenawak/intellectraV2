@@ -5,106 +5,22 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1757891292514,
-      "tag": "0000_absurd_marauders",
+      "when": 1763310366564,
+      "tag": "0000_watery_marvel_apes",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1757891720873,
-      "tag": "0001_elite_kingpin",
+      "when": 1763319881227,
+      "tag": "0001_tricky_meggan",
       "breakpoints": true
     },
     {
       "idx": 2,
       "version": "7",
-      "when": 1759899833016,
-      "tag": "0002_normal_omega_flight",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1759905652030,
-      "tag": "0003_sloppy_leo",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1759911432539,
-      "tag": "0004_known_nebula",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1760119169807,
-      "tag": "0005_sweet_the_hunter",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1760119698172,
-      "tag": "0006_smiling_bloodscream",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1760126208420,
-      "tag": "0007_magical_proemial_gods",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1760128696341,
-      "tag": "0008_slippery_revanche",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1760131803796,
-      "tag": "0009_useful_magdalene",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1760181312933,
-      "tag": "0010_moaning_living_tribunal",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "7",
-      "when": 1760251539513,
-      "tag": "0011_handy_penance",
-      "breakpoints": true
-    },
-    {
-      "idx": 12,
-      "version": "7",
-      "when": 1760253413921,
-      "tag": "0012_past_solo",
-      "breakpoints": true
-    },
-    {
-      "idx": 13,
-      "version": "7",
-      "when": 1760256293910,
-      "tag": "0013_mature_mongoose",
-      "breakpoints": true
-    },
-    {
-      "idx": 14,
-      "version": "7",
-      "when": 1760261176390,
-      "tag": "0014_round_gauntlet",
+      "when": 1763801974154,
+      "tag": "0002_breezy_invisible_woman",
       "breakpoints": true
     }
   ]

@@ -36,8 +36,13 @@ class ExaSearchProvider implements SearchProviderInterface {
     const { sites = [], numResults = 5, date = "past_30_days" } = options;
 
     try {
-      const searchOptions: any = {
-        text: true,
+      const searchOptions: {
+        text: true;
+        numResults: number;
+        date: string;
+        site?: string[];
+      } = {
+        text: true as const,
         numResults: sites && sites.length > 0 ? numResults * 2 : numResults, // Get more results if filtering to ensure we have enough after filtering
         date,
       };
@@ -95,7 +100,7 @@ class ExaSearchProvider implements SearchProviderInterface {
 
 // Tavily Search Provider Implementation (placeholder for future expansion)
 class TavilySearchProvider implements SearchProviderInterface {
-  async search(query: string, options: SearchOptions): Promise<SearchResult[]> {
+  async search(_query: string, _options: SearchOptions): Promise<SearchResult[]> {
     // TODO: Implement Tavily API integration
     // For now, return empty results
     console.warn('Tavily search provider not yet implemented');
@@ -105,7 +110,7 @@ class TavilySearchProvider implements SearchProviderInterface {
 
 // Serper Search Provider Implementation (placeholder for future expansion)
 class SerperSearchProvider implements SearchProviderInterface {
-  async search(query: string, options: SearchOptions): Promise<SearchResult[]> {
+  async search(_query: string, _options: SearchOptions): Promise<SearchResult[]> {
     // TODO: Implement Serper API integration
     // For now, return empty results
     console.warn('Serper search provider not yet implemented');

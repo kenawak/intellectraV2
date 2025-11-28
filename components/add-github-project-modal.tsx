@@ -62,7 +62,7 @@ export function AddGitHubProjectModal({ onProjectAdded }: AddGitHubProjectModalP
           <DialogTitle>Add GitHub Project</DialogTitle>
           <DialogDescription>
             Enter the URL of a public GitHub repository to add it to your workspace.
-            We'll analyze the repository and help you generate Cursor prompts.
+            We&apos;ll analyze the repository and help you generate Cursor prompts.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>

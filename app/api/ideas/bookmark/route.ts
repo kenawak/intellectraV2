@@ -3,11 +3,19 @@ import { requireAuth, getUser } from '@/lib/auth-utils';
 import { db } from '@/db/drizzle';
 import { bookmarkedIdea, idea } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { trackFeatureAnalytics, extractRequestMetadata } from '@/lib/analytics-service';
 
 export async function POST(req: NextRequest) {
+  const startTime = Date.now();
   try {
     const session = await requireAuth(req);
     const userId = session.user.id;
+    
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID not found' }, { status: 401 });
+    }
+    
+    const { ipAddress, userAgent } = extractRequestMetadata(req);
 
     const ideaData = await req.json();
 
@@ -26,7 +34,7 @@ export async function POST(req: NextRequest) {
       "suggestedPlatforms",
     ];
 
-    const filteredData = Object.fromEntries(Object.entries(ideaData).filter(([key]) => validFields.includes(key))) as any;
+    const filteredData = Object.fromEntries(Object.entries(ideaData).filter(([key]) => validFields.includes(key))) as Record<string, unknown>;
 
     if (!filteredData.title || !filteredData.summary) {
       return NextResponse.json({ error: "title and summary are required" }, { status: 400 });
@@ -48,13 +56,30 @@ export async function POST(req: NextRequest) {
 
     const saved = await db.insert(bookmarkedIdea).values(dataToSave).returning();
 
+    // Track analytics
+    const duration = Date.now() - startTime;
+    await trackFeatureAnalytics({
+      userId,
+      feature: 'bookmark',
+      action: 'create',
+      status: 'success',
+      metadata: {
+        ideaId: saved[0].id,
+        title: saved[0].title,
+        sourceUrl: saved[0].sourceUrl,
+      },
+      duration,
+      ipAddress: ipAddress || undefined,
+      userAgent: userAgent || undefined,
+    });
+
     const formattedIdea = {
       ...saved[0],
       createdAt: saved[0].createdAt.toISOString(),
       confidenceScore: saved[0].confidenceScore,
       suggestedPlatforms: saved[0].suggestedPlatforms ? (() => {
         try {
-          return JSON.parse(saved[0].suggestedPlatforms)
+          return JSON.parse(saved[0].suggestedPlatforms as string)
         } catch {
           return []
         }
@@ -64,14 +89,38 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "Bookmarked successfully", idea: formattedIdea }, { status: 201 });
   } catch (err) {
     console.error("Bookmark error:", err);
+    const session = await requireAuth(req).catch(() => null);
+    if (session?.user?.id) {
+      const { ipAddress, userAgent } = extractRequestMetadata(req);
+      const duration = Date.now() - startTime;
+      await trackFeatureAnalytics({
+        userId: session.user.id,
+        feature: 'bookmark',
+        action: 'create',
+        status: 'error',
+        metadata: {
+          error: err instanceof Error ? err.message : 'Unknown error',
+        },
+        duration,
+        ipAddress: ipAddress ?? undefined,
+        userAgent: userAgent ?? undefined,
+      });
+    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 export async function DELETE(req: NextRequest) {
+  const startTime = Date.now();
   try {
     const session = await requireAuth(req);
     const userId = session.user.id;
+    
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID not found' }, { status: 401 });
+    }
+    
+    const { ipAddress, userAgent } = extractRequestMetadata(req);
     const ideaData = await req.json();
     const { source_url, title } = ideaData;
 
@@ -115,12 +164,28 @@ export async function DELETE(req: NextRequest) {
       confidenceScore: b.confidenceScore,
       suggestedPlatforms: b.suggestedPlatforms ? (() => {
         try {
-          return JSON.parse(b.suggestedPlatforms)
+          return JSON.parse(b.suggestedPlatforms as string)
         } catch {
           return []
         }
       })() : [],
     }));
+
+    // Track analytics
+    const duration = Date.now() - startTime;
+    await trackFeatureAnalytics({
+      userId,
+      feature: 'bookmark',
+      action: 'delete',
+      status: 'success',
+      metadata: {
+        sourceUrl: source_url,
+        title,
+      },
+      duration,
+      ipAddress: ipAddress || undefined,
+      userAgent: userAgent || undefined,
+    });
 
     return NextResponse.json(formattedBookmarks);
   } catch (err) {

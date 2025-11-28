@@ -53,7 +53,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Idea not found' }, { status: 404 });
     }
 
-    if (!ideaData.codeStubs || !Array.isArray((ideaData.codeStubs as any).files)) {
+    if (!ideaData.codeStubs || !Array.isArray((ideaData.codeStubs as { files?: unknown[] }).files)) {
       return NextResponse.json({ error: 'Code stubs not found. Please generate specs first.' }, { status: 400 });
     }
 
@@ -97,8 +97,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     // Generate ZIP buffer
     const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
 
+    // Convert Buffer to Uint8Array for NextResponse
+    const zipArray = new Uint8Array(zipBuffer);
+
     // Return ZIP file
-    return new NextResponse(zipBuffer, {
+    return new NextResponse(zipArray, {
       headers: {
         'Content-Type': 'application/zip',
         'Content-Disposition': `attachment; filename="${projectName}-starter.zip"`,

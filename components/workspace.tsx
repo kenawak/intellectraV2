@@ -101,7 +101,7 @@ const Workspace = ({ ideaId, onClose }: WorkspaceProps) => {
               <TabsTrigger value="requirements">Requirements</TabsTrigger>
               <TabsTrigger value="design">Design</TabsTrigger>
               <TabsTrigger value="tasks">Tasks</TabsTrigger>
-              <TabsTrigger value="code">Code Stubs</TabsTrigger>
+              <TabsTrigger value="code">Implementation Specs</TabsTrigger>
             </TabsList>
 
             <TabsContent value="requirements" className="mt-4">
@@ -140,9 +140,14 @@ const Workspace = ({ ideaId, onClose }: WorkspaceProps) => {
 
             <TabsContent value="code" className="mt-4">
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Code Scaffolding</h3>
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Implementation Specifications</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Detailed technical specifications broken down for AI assistants or developers. These specs describe what needs to be built, not the code itself - perfect for feeding into Claude or other AI coding assistants.
+                  </p>
+                </div>
                 {artifacts.codeStubs.files.length === 0 ? (
-                  <p className="text-muted-foreground">No code stubs generated yet.</p>
+                  <p className="text-muted-foreground">No implementation specifications generated yet.</p>
                 ) : (
                   artifacts.codeStubs.files.map(({ path, content }, index) => (
                     <Card key={index}>

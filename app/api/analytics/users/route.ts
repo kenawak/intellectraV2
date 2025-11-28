@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth, requireAdmin } from '@/lib/auth-utils';
 import { db } from '@/db/drizzle';
 import { userAnalytics } from '@/db/schema';
 
