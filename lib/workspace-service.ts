@@ -51,6 +51,7 @@ export function generateIdeaStarterPrompt(
   // Safely access nested properties with proper type checking
   const profitability = validationData?.profitability as Record<string, unknown> | undefined;
   const competitiveAnalysis = validationData?.competitiveAnalysis as Record<string, unknown> | undefined;
+  const executionRoadmap = validationData?.executionRoadmap as Record<string, unknown> | undefined;
   
   const marketSize = (profitability?.marketSize as string | undefined) || 'TBD';
   const monetizationRoutes = profitability?.monetizationRoutes as string[] | undefined;
@@ -63,18 +64,31 @@ export function generateIdeaStarterPrompt(
   const competitors = competitiveAnalysis?.competitors as Array<unknown> | undefined;
   const competitionGap = competitors ? competitors.length : 0;
   
-  return `Ship ${ideaName} - Market validated ${validationScore}/10${marketInfo}.
+  const mvpFeatures = executionRoadmap?.mvp as string[] | undefined;
+  const mvpList = mvpFeatures && mvpFeatures.length > 0
+    ? mvpFeatures.map((f, i) => `${i + 1}. ${f}`).join('\n- ')
+    : 'Core value proposition delivery';
+
+  // Determine if this is a tech/software idea
+  const isTechProduct = ideaName.toLowerCase().includes('app') || 
+                        ideaName.toLowerCase().includes('tool') ||
+                        ideaName.toLowerCase().includes('platform') ||
+                        ideaName.toLowerCase().includes('saas') ||
+                        ideaName.toLowerCase().includes('software') ||
+                        technicalComplexity !== 'low';
+
+  if (isTechProduct) {
+    return `Ship ${ideaName} - Market validated ${validationScore}/10${marketInfo}.
 
 PRIORITY 1 MVP (Next.js + Supabase, 5 days):
-- Core value prop implementation from validation
+- ${mvpList}
 - Stripe integration for ${monetizationRoute}
 - Landing page with social proof placeholders
-- User auth + workspace sync
+- User auth + core functionality
 - PostHog events for all key flows
 
 TECHNICAL ARCHITECTURE:
-[Detailed Next.js monorepo structure matching Intellectra stack]
-- Next.js 15 App Router with TypeScript
+- Next.js 15 App Router with TypeScript (or appropriate stack)
 - Supabase for auth and database
 - shadcn/ui components
 - PostHog analytics
@@ -86,7 +100,33 @@ SUCCESS METRICS FROM VALIDATION:
 - Technical complexity: ${technicalComplexity}
 - Solo founder feasible: ${soloFounderFeasible ? 'Yes' : 'No'}
 
-Generate: Full project scaffold, docker-compose, deployment script to Vercel.`;
+Generate: Full project scaffold, deployment script, go-to-market strategy.`;
+  } else {
+    // Non-tech product (service, physical product, local business, etc.)
+    return `Launch ${ideaName} - Market validated ${validationScore}/10${marketInfo}.
+
+PRIORITY 1 MVP (Launch in 2-4 weeks):
+- ${mvpList}
+- ${monetizationRoute} implementation
+- Customer acquisition setup
+- Distribution channels (TikTok, Reddit, local, etc.)
+
+BUSINESS PLAN:
+- Go-to-market strategy
+- Distribution & growth tactics
+- Pricing & monetization model
+- Tools & platforms needed (no-code options if applicable)
+- Marketing channels (social media, communities, partnerships)
+- Success metrics & tracking
+
+SUCCESS METRICS FROM VALIDATION:
+- Market size: ${marketSize}
+- Competition gap: ${competitionGap} competitors identified
+- Build complexity: ${technicalComplexity}
+- Solo founder feasible: ${soloFounderFeasible ? 'Yes' : 'No'}
+
+Generate: Complete business plan, MVP roadmap, distribution strategy, growth tactics.`;
+  }
 }
 
 /**

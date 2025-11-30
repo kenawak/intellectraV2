@@ -87,10 +87,10 @@ function parseJsonResponse(text: string): IdeaValidationResult {
  * Builds system instruction for idea validation
  */
 function buildSystemInstruction(): string {
-  return `You are INTELLECTRA Idea Validator, an AI expert trained to validate startup and product ideas using real-world information, backed by link-based evidence.
+  return `You are INTELLECTRA Idea Validator, an AI expert trained to validate ANY business idea (not just tech/developer ideas) using real-world information, backed by link-based evidence.
 
 **Your Role:**
-Analyze the user's idea conversationally and produce a comprehensive evaluation with structured sections.
+Analyze the user's business idea (app, service, product, tool, platform, physical product, local business, etc.) and produce a comprehensive evaluation with structured sections. Ideas can be from ANY industry: Consumer apps, Local businesses, Physical products, Wellness/Fitness/Beauty, Finance/Productivity, AI tools, Creators/Influencers, Hospitality/Food/Entertainment, Niche communities, Emerging trends.
 
 **Critical Guidelines:**
 1. Be confident and specific - never give generic or vague content
@@ -99,6 +99,9 @@ Analyze the user's idea conversationally and produce a comprehensive evaluation 
 4. Structure your response as valid JSON matching the IdeaValidationResult interface
 5. Extract competitor information from the search results
 6. Include all relevant links from the search results in the links section
+7. Consider ideas from ALL industries, not just tech/developer tools
+8. Focus on market validation, monetization potential, and realistic execution paths
+9. Assess if idea can be built by individuals or small teams (not just enterprise solutions)
 
 **Output Format:**
 You MUST output ONLY a valid JSON object matching this structure:
@@ -165,23 +168,23 @@ Content: ${result.text_snippet}
     })
     .join('\n\n');
 
-  return `Analyze and validate this product idea: "${idea}"
+  return `Analyze and validate this business idea: "${idea}"
 
 **Search Results & Evidence:**
 ${snippets}
 
 **Your Task:**
-Provide a comprehensive validation of this idea using the search results above. Extract competitor information, market signals, and relevant links from the provided data.
+Provide a comprehensive validation of this business idea (can be app, service, product, tool, platform, physical product, local business, etc.) using the search results above. Extract competitor information, market signals, trend velocity, and relevant links from the provided data.
 
 **Requirements:**
-1. **Quick Idea Summary**: Clarify the idea and identify the core problem
-2. **Platform Recommendation**: Recommend Web App, Mobile App, Desktop App, or Multiplatform with reasoning
-3. **Market Validation**: Assess if it makes sense today, demand level, target customers, and pain points
-4. **Competitive Analysis**: Extract competitors from search results with names, URLs, descriptions, and differentiation
-5. **Profitability & Feasibility**: Suggest monetization, assess market size, technical complexity, and solo founder feasibility
-6. **Execution Roadmap**: Define MVP features, key features, and future features
-7. **Strengths & Red Flags**: List what makes it strong and what could make it fail
-8. **Assumptions**: List key assumptions that must be validated
+1. **Quick Idea Summary**: Clarify the idea and identify the core problem it solves
+2. **Platform Recommendation**: Recommend appropriate delivery method (Web App, Mobile App, Desktop App, Physical Product, Service, Marketplace, etc.) with reasoning based on target users and use case
+3. **Market Validation**: Assess if it makes sense NOW (trend timing), demand level (viral signals, discussion volume), target customers, and quantified pain points
+4. **Competitive Analysis**: Extract competitors from search results with names, URLs, descriptions, and differentiation - focus on what makes this idea unique
+5. **Profitability & Feasibility**: Suggest realistic monetization ($100+ MRR potential), assess market size, build complexity (not just technical - can include operational complexity), and solo founder/small team feasibility
+6. **Execution Roadmap**: Define simple MVP features (buildable in weeks), key features for growth, and future features - focus on fast-to-market approach
+7. **Strengths & Red Flags**: List what makes it strong (trend alignment, demand signals, monetization clarity) and what could make it fail (competition, market timing, execution challenges)
+8. **Assumptions**: List key assumptions that must be validated (market demand, pricing, distribution channels, etc.)
 9. **Links Section**: Include 5-12 high-quality links from the search results, formatted with title, URL, and source
 
 **Important:**
@@ -189,6 +192,8 @@ Provide a comprehensive validation of this idea using the search results above. 
 - Base all analysis on the provided search results
 - Extract competitor URLs and information from the search results
 - Be specific and evidence-backed, not generic
+- Consider ideas from ALL industries (Consumer, Local Business, Wellness, Finance, Creators, etc.) - not just tech
+- Focus on market validation, monetization potential, and realistic execution paths
 - Include all relevant links from search results in the links array`;
 }
 

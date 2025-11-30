@@ -24,39 +24,41 @@ async function generateDeveloperSaaSIdeas(formattedPosts: string) {
             role: "user",
             parts: [{
               text: `
-              You are an assistant helping developers discover cool side project ideas based on real developer problems and needs.
+              You are Intellectra's Global Idea Engine - analyzing real user posts from TikTok, Reddit, X (Twitter) to surface high-value, trend-driven, money-making business opportunities.
 
-              Below are recent posts from developers. Each post includes its source site:\n\n${formattedPosts}\n\n
+              Below are recent posts from users across social platforms. Each post includes its source site:\n\n${formattedPosts}\n\n
 
               For each post, return a JSON object in this format:
 
               {
-                "title": "3–4 word concept label (e.g., 'Async Code Reviewer', 'DevOps Incident Mapper', 'CLI Tool for X')",
-                "summary": "<1–2 sentence summary of what the developer is experiencing or the technical problem they're facing. Be SPECIFIC and concrete, not vague. Focus on actual coding/development pain points.>",
-                "unmet_needs": ["<1–2 SPECIFIC technical pain points or gaps developers are expressing related to building, coding, or development workflow. Avoid business/marketing/sales concerns.>"],
-                "product_idea": ["<1 SPECIFIC side project or developer tool idea that solves these technical problems. Be concrete about what the tool/app does, what tech it uses, and how it helps developers build something cool. Focus on buildable projects, not business concepts.>"],
-                "proof_of_concept": "<Why this idea makes sense for developers to build. Include 1 short DIRECT quote from the post if possible. Reference the specific source site.>",
+                "title": "Catchy, market-ready business name (e.g., 'No-Show Shield', 'AI Meal Prep Planner', 'Creator Revenue Optimizer', 'Local Service Booking App')",
+                "summary": "<1–2 sentence summary of the pain point, trend, or opportunity being discussed. Be SPECIFIC - what problem are people expressing? What trend is emerging? Focus on real demand signals.>",
+                "unmet_needs": ["<1–2 SPECIFIC pain points, gaps, or opportunities people are expressing. Can be technical, business, consumer, or lifestyle-related. Focus on what people are actively complaining about or requesting.>"],
+                "product_idea": ["<1 SPECIFIC business idea that solves this problem. Can be: app, service, physical product, digital product, tool, platform, etc. Be concrete about what it does and who it serves. Include simple MVP approach if applicable.>"],
+                "proof_of_concept": "<Why this idea makes sense NOW. Include 1 short DIRECT quote from the post if possible. Reference the specific source site. Mention trend velocity, viral signal, or demand strength.>",
                 "source_url": "<EXACT URL from the post above>",
-                "source_site": "<Extract the domain/site name from the source_url (e.g., 'reddit.com', 'indiehackers.com')>",
+                "source_site": "<Extract the domain/site name from the source_url (e.g., 'reddit.com', 'tiktok.com', 'x.com')>",
 
-                "confidenceScore": <1–100, how strong this idea feels based on concrete evidence>,
+                "confidenceScore": <1–100, how strong this idea feels based on: discussion volume, pain point clarity, monetization potential, trend velocity>,
                 "suggestedPlatforms": [{"name": "Platform Name", "link": "https://example.com"}, ...],
                 "creationDate": "<Current date in format 'Month Day, Year'>",
-                "ideaSource": "<Format: 'Source Site Name - Post Type' (e.g., 'Reddit - r/SideProject', 'Indie Hackers - Forum Post', 'Hacker News - Discussion')>"
+                "ideaSource": "<Format: 'Source Site Name - Post Type' (e.g., 'Reddit - r/entrepreneur', 'TikTok - Business Tips', 'X - Startup Discussion')>"
               }
 
-              CRITICAL Guidelines for DEVELOPER SIDE PROJECTS:
-              - Focus EXCLUSIVELY on *developers, engineers, and indie hackers* who want to BUILD something cool or solve technical problems.
-              - IGNORE and SKIP: generic business content, entrepreneurship tips, marketing advice, fundraising, business strategy, founder stories, or anything not directly related to BUILDING/CODING.
-              - PRIORITIZE: technical problems, coding challenges, development workflow pain points, missing tools/libraries, automation needs, developer productivity issues, or cool unique features developers want to build.
-              - Extract *SPECIFIC, concrete TECHNICAL* needs - focus on what developers struggle with when BUILDING things, not when running businesses.
-              - product_idea should be a BUILDABLE side project (CLI tool, API, library, web app, browser extension, etc.) that a developer can create, not a business plan.
-              - Be SPECIFIC in product ideas - what exactly does the tool/app do? What tech stack would work? How does it help developers build something unique?
-              - IMPORTANT: The source_url MUST match exactly one of the URLs provided in the posts above.
-              - Extract source_site from the URL (the domain name).
-              - ideaSource should clearly indicate WHERE the problem was found (e.g., "Reddit - r/SideProject", "Indie Hackers - Forum Discussion").
-              - Only return ideas from posts that have ACTUAL developer technical problems or coding pain points clearly expressed.
-              - For suggestedPlatforms, suggest developer-focused platforms (GitHub, Product Hunt, Dev.to, etc.) where side projects can be shared.
+              CRITICAL Guidelines for UNIVERSAL BUSINESS IDEAS:
+              - Focus on ANY user - consumers, creators, local businesses, solopreneurs, not just developers
+              - PRIORITIZE: Viral patterns, trending pain points, emerging opportunities, underserved markets, fast-moving trends
+              - EXTRACT: Real demand signals from posts - what are people complaining about? What are they requesting? What trends are gaining momentum?
+              - INDUSTRY DIVERSITY: Include ideas from Consumer apps, Local businesses, Physical products, Wellness/Fitness/Beauty, Finance/Productivity, AI tools for non-technical users, Creators/Influencers, Hospitality/Food/Entertainment, Niche communities, Emerging trends
+              - MONETIZATION: Every idea should have clear revenue potential ($100+ MRR) - subscription, usage-based, marketplace, affiliate, digital products, etc.
+              - MVP-FOCUSED: Ideas should be buildable in weeks, not months - simple, fast-to-market
+              - AVOID: Over-technical jargon (unless post is specifically developer-focused), generic "app ideas", hard-to-monetize hobby concepts, overcomplicated enterprise solutions
+              - TONE: Honest, data-driven, trend-aware, clear, simple, actionable
+              - IMPORTANT: The source_url MUST match exactly one of the URLs provided in the posts above
+              - Extract source_site from the URL (the domain name)
+              - ideaSource should clearly indicate WHERE the opportunity was found
+              - For suggestedPlatforms, suggest relevant platforms based on idea type (Product Hunt, TikTok, Reddit communities, industry-specific platforms, etc.)
+              - Only return ideas from posts that show REAL demand, pain points, or trending opportunities
               - Only return a raw JSON array. No text, markdown, or explanation.
               `
             }]

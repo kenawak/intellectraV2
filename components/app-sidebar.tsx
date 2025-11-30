@@ -27,6 +27,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { authClient } from "@/lib/auth-client"
+import { AdminSidebar } from "@/components/admin/AdminSidebar"
 
 // Removed old analytics interface - using new comprehensive analytics system
 
@@ -126,6 +127,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {/* Show Market Opportunities only for paid users */}
         {userProfile && (userProfile.plan === 'pro' || userProfile.plan === 'enterprise' || userProfile.paid === true) && (
           <NavMain items={paidNavItems} />
+        )}
+        {/* Show Admin section only for admin user */}
+        {session?.user?.id === 'OMp4mdqfTj4U1jFUHTJO4eXbtjyafCz3' && (
+          <AdminSidebar />
         )}
       </SidebarContent>
       <SidebarFooter className="flex items-center justify-between p-3 border-t gap-2">
